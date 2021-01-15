@@ -24,6 +24,10 @@ public class StyleAnalyzerService {
   @Autowired
   private OpeningCache openingCache;
 
+  /**
+   * Analyze opening from a a collection of games and determine keys opening statistic such as most
+   * played games, best/worst opening, etc.
+   */
   private KeyOpenings getKeyOpenings(Perspective perspective, TreeSet<OpeningStat> openingStats) {
 
     OpeningStat currentBest = null;
@@ -57,7 +61,7 @@ public class StyleAnalyzerService {
       if (thisOpening.hasHigherWinRate(currentBest, perspective)) {
         currentBest = thisOpening;
       }
-      if (thisOpening.hasLowerWinRate(thisOpening, perspective)) {
+      if (thisOpening.hasLowerWinRate(currentWorst, perspective)) {
         currentWorst = thisOpening;
       }
     }
@@ -73,17 +77,15 @@ public class StyleAnalyzerService {
 
   public OpeningStyle analyzeOpeningStyle(String playerUsername)
       throws Exception {
-    OpeningStyle openingStyle = new OpeningStyle();
     TreeSet<OpeningStat> openingStats = gameDataAccess.getOpenings(playerUsername);
-    OpeningStat [] openingStatArray = new OpeningStat[openingStats.size()];
-    openingStats.toArray(openingStatArray);
 
     // General opening alalysis.
     KeyOpenings whiteKeyOpenings = getKeyOpenings(Perspective.AS_WHITE, openingStats);
     KeyOpenings blackKeyOpenings = getKeyOpenings(Perspective.AS_BLACK, openingStats);
     
-    // Deeper opening analysis.
+    OpeningStyle openingStyle = new OpeningStyle();
 
+    // Deeper opening analysis.
     // Set opening styles as White.
     whiteKeyOpenings.getWeapon().ifPresent(
         weapon -> openingStyle.setStrongestOpeningAsWhite(weapon.getName()));
