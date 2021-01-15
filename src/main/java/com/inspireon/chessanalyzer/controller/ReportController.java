@@ -13,11 +13,11 @@ import com.inspireon.chessanalyzer.service.ReportService;
 @CrossOrigin(origins = { "http://localhost:3000"})
 @RestController
 public class ReportController {
-	@Autowired
-	private ReportService reportService;
-	
-	@RequestMapping("/report/overview")
-	public PlayerOverview getPlayerOverview(@RequestParam(value="playerUsername") String playerUsername) throws Exception {
-		return reportService.getPlayerOverview(playerUsername);
-	}
+  @Autowired
+  private ReportService reportService;
+  
+  @RequestMapping("/report/overview")
+  public PlayerOverview getPlayerOverview(@RequestParam(value="playerUsername") String playerUsername) throws Exception {
+    return reportService.getPlayerOverview(playerUsername);
+  }
 }

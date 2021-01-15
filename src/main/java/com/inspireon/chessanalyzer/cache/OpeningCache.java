@@ -24,23 +24,23 @@ import lombok.Getter;
 @Component
 public class OpeningCache {
 
-	@Autowired
-	private AppConfig appConfig;
-	
-	@Autowired
-	private OpeningFileAccess openingFileAccess;
-	
-	private List<ChessOpening> openings;
-	
-	private Map<String, ChessOpening> openingMap;
+  @Autowired
+  private AppConfig appConfig;
+  
+  @Autowired
+  private OpeningFileAccess openingFileAccess;
+  
+  private List<ChessOpening> openings;
+  
+  private Map<String, ChessOpening> openingMap;
 
-	@PostConstruct
-	public void init() {
-		ChessTempoResult chessTempoResult = openingFileAccess.getOpenings();
-		openings = chessTempoResult.getOpenings();
-		openingMap = new HashMap<String, ChessOpening>();
-		for (ChessOpening opening : openings) {
-			openingMap.put(opening.getName(), opening);
-		}
-	}
+  @PostConstruct
+  public void init() {
+    ChessTempoResult chessTempoResult = openingFileAccess.getOpenings();
+    openings = chessTempoResult.getOpenings();
+    openingMap = new HashMap<String, ChessOpening>();
+    for (ChessOpening opening : openings) {
+      openingMap.put(opening.getName(), opening);
+    }
+  }
 }

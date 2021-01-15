@@ -8,8 +8,8 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan
 public class ChessanalyzerApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(ChessanalyzerApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(ChessanalyzerApplication.class, args);
+  }
 
 }

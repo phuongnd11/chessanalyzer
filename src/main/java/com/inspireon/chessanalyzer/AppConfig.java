@@ -8,11 +8,11 @@ import lombok.Getter;
 @Getter
 @Configuration
 public class AppConfig {
-	@Value("${chessanalyzer.openingbook.path}")
-	private String openingBookPath;
-	
-	@Value("${chessanalyzer.gamebase.folder}")
-	private String gameBaseFolder;
-	
-	
+  @Value("${chessanalyzer.openingbook.path}")
+  private String openingBookPath;
+  
+  @Value("${chessanalyzer.gamebase.folder}")
+  private String gameBaseFolder;
+  
+  
 }

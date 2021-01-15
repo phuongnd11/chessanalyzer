@@ -27,32 +27,32 @@ import com.inspireon.chessanalyzer.service.OpeningAnalyzerService;
 @CrossOrigin(origins = { "http://localhost:3000"})
 @RestController
 public class OpeningController {
-	
-	@Autowired
-	private OpeningAnalyzerService openingAnalyzerService;
-	
-	@RequestMapping("/opening/mistakes")
-	public List <UserMistake> getOpeningMistakes(@RequestParam String playerUsername, @RequestParam String openingName) throws Exception {
-		
-		return openingAnalyzerService.getOpeningMistakes(playerUsername, openingName);
-	}
-	
-	@RequestMapping("/opening")
-	public TreeSet <OpeningStat> getOpenings(@RequestParam String playerUsername) throws Exception {
-		return openingAnalyzerService.getOpenings(playerUsername);
-	}
-	
-	public static void main(String[] args) throws IOException {
-		String jsonString = Files.readString(Path.of(new ClassPathResource("openingbook/response.json").getFile().getAbsolutePath()));
-		ObjectMapper mapper = new ObjectMapper();
-		ChessTempoResult chessTempoResult = mapper.readValue(jsonString, ChessTempoResult.class);
-		Map<String, ChessOpening> openings = new HashMap<String, ChessOpening>();
-		for (ChessOpening chessOpening : chessTempoResult.getOpenings()) {
-			openings.put(chessOpening.getName().split(":")[0], chessOpening);
-		}
-		int i = 0;
-		for (Entry<String, ChessOpening> entr : openings.entrySet()) {
-			System.out.println(++i + entr.getKey());
-		}
-	}
+  
+  @Autowired
+  private OpeningAnalyzerService openingAnalyzerService;
+  
+  @RequestMapping("/opening/mistakes")
+  public List <UserMistake> getOpeningMistakes(@RequestParam String playerUsername, @RequestParam String openingName) throws Exception {
+    
+    return openingAnalyzerService.getOpeningMistakes(playerUsername, openingName);
+  }
+  
+  @RequestMapping("/opening")
+  public TreeSet <OpeningStat> getOpenings(@RequestParam String playerUsername) throws Exception {
+    return openingAnalyzerService.getOpenings(playerUsername);
+  }
+  
+  public static void main(String[] args) throws IOException {
+    String jsonString = Files.readString(Path.of(new ClassPathResource("openingbook/response.json").getFile().getAbsolutePath()));
+    ObjectMapper mapper = new ObjectMapper();
+    ChessTempoResult chessTempoResult = mapper.readValue(jsonString, ChessTempoResult.class);
+    Map<String, ChessOpening> openings = new HashMap<String, ChessOpening>();
+    for (ChessOpening chessOpening : chessTempoResult.getOpenings()) {
+      openings.put(chessOpening.getName().split(":")[0], chessOpening);
+    }
+    int i = 0;
+    for (Entry<String, ChessOpening> entr : openings.entrySet()) {
+      System.out.println(++i + entr.getKey());
+    }
+  }
 }

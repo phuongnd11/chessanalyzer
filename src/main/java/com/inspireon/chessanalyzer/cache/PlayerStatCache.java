@@ -18,24 +18,24 @@ import lombok.Setter;
 @Component
 public class PlayerStatCache {
 
-	//username-site -> games
-	private ConcurrentHashMap<String, List<Game>> playerGames = new ConcurrentHashMap<String, List<Game>>();
-	
-	//username-site -> games
-	private ConcurrentHashMap<String, TreeSet<OpeningStat>> playerOpeningStats = new ConcurrentHashMap<String, TreeSet<OpeningStat>>();
-	
-	//username-site -> opening category
-	private ConcurrentHashMap<String, TreeSet<OpeningStat>> playerOpeningStyle = new ConcurrentHashMap<String, TreeSet<OpeningStat>>();
+  //username-site -> games
+  private ConcurrentHashMap<String, List<Game>> playerGames = new ConcurrentHashMap<String, List<Game>>();
+  
+  //username-site -> games
+  private ConcurrentHashMap<String, TreeSet<OpeningStat>> playerOpeningStats = new ConcurrentHashMap<String, TreeSet<OpeningStat>>();
+  
+  //username-site -> opening category
+  private ConcurrentHashMap<String, TreeSet<OpeningStat>> playerOpeningStyle = new ConcurrentHashMap<String, TreeSet<OpeningStat>>();
 
 
-	public void reloadGames(String player, String site, List<Game> games) {
-		playerGames.putIfAbsent(player + "-" + site, new ArrayList<Game>());
-		playerGames.computeIfPresent(player + "-" + site, (key, val) -> games);
-	}
-	
-	public void reloadOpeningStats(String player, String site, TreeSet<OpeningStat> openingStats) {
-		playerOpeningStats.putIfAbsent(player + "-" + site, new TreeSet<OpeningStat>());
-		playerOpeningStats.computeIfPresent(player + "-" + site, (key, val) -> openingStats);
-	}
+  public void reloadGames(String player, String site, List<Game> games) {
+    playerGames.putIfAbsent(player + "-" + site, new ArrayList<Game>());
+    playerGames.computeIfPresent(player + "-" + site, (key, val) -> games);
+  }
+  
+  public void reloadOpeningStats(String player, String site, TreeSet<OpeningStat> openingStats) {
+    playerOpeningStats.putIfAbsent(player + "-" + site, new TreeSet<OpeningStat>());
+    playerOpeningStats.computeIfPresent(player + "-" + site, (key, val) -> openingStats);
+  }
 
 }
