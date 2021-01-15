@@ -24,49 +24,6 @@ public class StyleAnalyzerService {
   @Autowired
   private OpeningCache openingCache;
 
-  @AutoValue
-  static abstract class KeyOpenings {
-    // Best opening.
-    public abstract Optional<OpeningStat> getWeapon();
-
-    // Worst opening.
-    public abstract Optional<OpeningStat> getWeakness();
-
-    // Most played opening.
-    public abstract Optional<OpeningStat> getMostPlayed();
-
-    // Most played against E4. Statistic only for Perspective.AS_BLACK.
-    public abstract Optional<OpeningStat> getMostPlayedAgainstE4();
-
-    // Most played against D4. Statistic only for Perspective.AS_BLACK.
-    public abstract Optional<OpeningStat> getMostPlayedAgainstD4();
-
-    public static Builder newBuilder() {
-      return new AutoValue_StyleAnalyzerService_KeyOpenings.Builder()
-          .setWeapon(Optional.empty())
-          .setWeakness(Optional.empty())
-          .setMostPlayed(Optional.empty())
-          .setMostPlayedAgainstE4(Optional.empty())
-          .setMostPlayedAgainstD4(Optional.empty());
-    }
-
-    @AutoValue.Builder
-    abstract static class Builder {
-      abstract Builder setWeapon(Optional<OpeningStat> value);
-
-      abstract Builder setWeakness(Optional<OpeningStat> value);
-
-      abstract Builder setMostPlayed(Optional<OpeningStat> value);
-
-      abstract Builder setMostPlayedAgainstE4(Optional<OpeningStat> value);
-
-      abstract Builder setMostPlayedAgainstD4(Optional<OpeningStat> value);
-
-      abstract KeyOpenings build();
-    }
-  }
-
-
   private KeyOpenings getKeyOpenings(Perspective perspective, TreeSet<OpeningStat> openingStats) {
 
     OpeningStat currentBest = null;
@@ -242,5 +199,42 @@ public class StyleAnalyzerService {
     }
     
     return style.toString();
+  }
+
+  @AutoValue
+  static abstract class KeyOpenings {
+    // Best opening.
+    public abstract Optional<OpeningStat> getWeapon();
+
+    // Worst opening.
+    public abstract Optional<OpeningStat> getWeakness();
+
+    // Most played opening.
+    public abstract Optional<OpeningStat> getMostPlayed();
+
+    // Most played against E4. Statistic only for Perspective.AS_BLACK.
+    public abstract Optional<OpeningStat> getMostPlayedAgainstE4();
+
+    // Most played against D4. Statistic only for Perspective.AS_BLACK.
+    public abstract Optional<OpeningStat> getMostPlayedAgainstD4();
+
+    public static Builder newBuilder() {
+      return new AutoValue_StyleAnalyzerService_KeyOpenings.Builder()
+          .setWeapon(Optional.empty())
+          .setWeakness(Optional.empty())
+          .setMostPlayed(Optional.empty())
+          .setMostPlayedAgainstE4(Optional.empty())
+          .setMostPlayedAgainstD4(Optional.empty());
+    }
+
+    @AutoValue.Builder
+    abstract static class Builder {
+      abstract Builder setWeapon(Optional<OpeningStat> value);
+      abstract Builder setWeakness(Optional<OpeningStat> value);
+      abstract Builder setMostPlayed(Optional<OpeningStat> value);
+      abstract Builder setMostPlayedAgainstE4(Optional<OpeningStat> value);
+      abstract Builder setMostPlayedAgainstD4(Optional<OpeningStat> value);
+      abstract KeyOpenings build();
+    }
   }
 }
