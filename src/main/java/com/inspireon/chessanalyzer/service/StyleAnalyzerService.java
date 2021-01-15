@@ -1,17 +1,19 @@
 package com.inspireon.chessanalyzer.service;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.TreeSet;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import com.google.auto.value.AutoValue;
 import com.inspireon.chessanalyzer.cache.OpeningCache;
 import com.inspireon.chessanalyzer.datamanager.GameDataAccess;
 import com.inspireon.chessanalyzer.dtos.OpeningStat;
+import com.inspireon.chessanalyzer.dtos.OpeningStat.Perspective;
 import com.inspireon.chessanalyzer.dtos.OpeningStyle;
 import com.inspireon.chessanalyzer.model.ChessOpening;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.TreeSet;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class StyleAnalyzerService {
@@ -21,98 +23,172 @@ public class StyleAnalyzerService {
   
   @Autowired
   private OpeningCache openingCache;
-  
-  public OpeningStyle analyzeOpeningStyle(String playerUsername) throws Exception {
+
+  @AutoValue
+  static abstract class KeyOpenings {
+    // Best opening.
+    public abstract Optional<OpeningStat> getWeapon();
+
+    // Worst opening.
+    public abstract Optional<OpeningStat> getWeakness();
+
+    // Most played opening.
+    public abstract Optional<OpeningStat> getMostPlayed();
+
+    // Most played against E4. Statistic only for Perspective.AS_BLACK.
+    public abstract Optional<OpeningStat> getMostPlayedAgainstE4();
+
+    // Most played against D4. Statistic only for Perspective.AS_BLACK.
+    public abstract Optional<OpeningStat> getMostPlayedAgainstD4();
+
+    public static Builder newBuilder() {
+      return new AutoValue_StyleAnalyzerService_KeyOpenings.Builder()
+          .setWeapon(Optional.empty())
+          .setWeakness(Optional.empty())
+          .setMostPlayed(Optional.empty())
+          .setMostPlayedAgainstE4(Optional.empty())
+          .setMostPlayedAgainstD4(Optional.empty());
+    }
+
+    @AutoValue.Builder
+    abstract static class Builder {
+      abstract Builder setWeapon(Optional<OpeningStat> value);
+
+      abstract Builder setWeakness(Optional<OpeningStat> value);
+
+      abstract Builder setMostPlayed(Optional<OpeningStat> value);
+
+      abstract Builder setMostPlayedAgainstE4(Optional<OpeningStat> value);
+
+      abstract Builder setMostPlayedAgainstD4(Optional<OpeningStat> value);
+
+      abstract KeyOpenings build();
+    }
+  }
+
+
+  private KeyOpenings getKeyOpenings(Perspective perspective, TreeSet<OpeningStat> openingStats) {
+
+    OpeningStat currentBest = null;
+    OpeningStat currentWorst = null;
+    OpeningStat currentMostGames = null;
+
+    // Stat only for Perspective.AS_BLACK.
+    OpeningStat currentMostVsE4 = null;
+    OpeningStat currentMostVsD4 = null;
+
+    for (OpeningStat thisOpening : openingStats) {
+      if (thisOpening.hasMoreGames(currentMostGames, perspective)) {
+        currentMostGames = thisOpening;
+      }
+
+      if (perspective == Perspective.AS_BLACK) {
+        ChessOpening opening = getOpening(thisOpening);
+        if (isE4(opening) && thisOpening.hasMoreGames(currentMostVsE4, Perspective.AS_BLACK)) {
+          currentMostVsE4 = thisOpening;
+        }
+        if (isD4(opening) && thisOpening.hasMoreGames(currentMostVsD4, Perspective.AS_BLACK)) {
+          currentMostVsD4 = thisOpening;
+        }
+      }
+
+      // Skip openings that has not been played more than 10 times for further analysis.
+      if (thisOpening.getTotalGames(perspective) <= 10) {
+        continue;
+      }
+
+      if (thisOpening.hasHigherWinRate(currentBest, perspective)) {
+        currentBest = thisOpening;
+      }
+      if (thisOpening.hasLowerWinRate(thisOpening, perspective)) {
+        currentWorst = thisOpening;
+      }
+    }
+
+    return KeyOpenings.newBuilder()
+        .setWeapon(Optional.ofNullable(currentBest))
+        .setWeakness(Optional.ofNullable(currentWorst))
+        .setMostPlayed(Optional.ofNullable(currentMostGames))
+        .setMostPlayedAgainstE4(Optional.ofNullable(currentMostVsE4))
+        .setMostPlayedAgainstD4(Optional.ofNullable(currentMostVsD4))
+        .build();
+  }
+
+  public OpeningStyle analyzeOpeningStyle(String playerUsername)
+      throws Exception {
     OpeningStyle openingStyle = new OpeningStyle();
     TreeSet<OpeningStat> openingStats = gameDataAccess.getOpenings(playerUsername);
     OpeningStat [] openingStatArray = new OpeningStat[openingStats.size()];
     openingStats.toArray(openingStatArray);
+
+    // General opening alalysis.
+    KeyOpenings whiteKeyOpenings = getKeyOpenings(Perspective.AS_WHITE, openingStats);
+    KeyOpenings blackKeyOpenings = getKeyOpenings(Perspective.AS_BLACK, openingStats);
     
-    Arrays.sort(openingStatArray, new Comparator<OpeningStat>() {
-      @Override
-      public int compare(OpeningStat o1, OpeningStat o2) {
-        return o2.getTotalWhite().compareTo(o1.getTotalWhite());
-      }      
-    });
-    
-    ChessOpening mostPopularAsWhite = openingCache.getOpeningMap().get(openingStatArray[0].getName());
-    
-    OpeningStat mainWeaponAsWhite = null;
-    
-    OpeningStat mainWeaknessAsWhite = null;
-    
-    for (int i = 0; i < openingStatArray.length; i++) {
-      if (mainWeaponAsWhite == null || openingStatArray[i].getWinRateAsWhite() > mainWeaponAsWhite.getWinRateAsWhite()) {
-        if (openingStatArray[i].getTotalWhite() > 10)
-          mainWeaponAsWhite = openingStatArray[i];
-      }
-      if (mainWeaknessAsWhite == null || openingStatArray[i].getWinRateAsWhite() < mainWeaknessAsWhite.getWinRateAsWhite()) {
-        if (openingStatArray[i].getTotalWhite() > 10)
-          mainWeaknessAsWhite = openingStatArray[i];
-      }
-    }
-    
-    Arrays.sort(openingStatArray, new Comparator<OpeningStat>() {
-      @Override
-      public int compare(OpeningStat o1, OpeningStat o2) {
-        return o2.getTotalBlack().compareTo(o1.getTotalBlack());
-      }      
-    });
-    
-    OpeningStat mainWeaponAsBlack = null;
-    
-    OpeningStat mainWeaknessAsBlack = null;
-    
-    for (int i = 0; i < openingStatArray.length; i++) {
-      if (mainWeaponAsBlack == null || openingStatArray[i].getWinRateAsBlack() > mainWeaponAsBlack.getWinRateAsBlack()) {
-        if (openingStatArray[i].getTotalBlack() > 10) 
-          mainWeaponAsBlack = openingStatArray[i];
-      }
-      if (mainWeaknessAsBlack == null || openingStatArray[i].getWinRateAsBlack() < mainWeaknessAsBlack.getWinRateAsBlack()) {
-        if (openingStatArray[i].getTotalBlack() > 10) 
-          mainWeaknessAsBlack = openingStatArray[i];
-      }
-    }
-    
-    ChessOpening mostPopularAgainstE4 = null;
+    // Deeper opening analysis.
     ChessOpening mostPopularAgainstD4 = null;
     
-    for (int i = 0; i < openingStatArray.length; i++) {
-      if (openingCache.getOpeningMap().get(openingStatArray[i].getName()).getMoves_lalg().get(0).equals("e2e4")) {
-        mostPopularAgainstE4 = openingCache.getOpeningMap().get(openingStatArray[i].getName());
-      } else if (openingCache.getOpeningMap().get(openingStatArray[i].getName()).getMoves_lalg().get(0).equals("d2d4")) {
-        mostPopularAgainstD4 = openingCache.getOpeningMap().get(openingStatArray[i].getName());
+    for (OpeningStat opening : openingStats) {
+      if (openingCache.getOpeningMap().get(opening.getName()).getMoves_lalg().get(0).equals("d2d4")) {
+        mostPopularAgainstD4 = openingCache.getOpeningMap().get(opening.getName());
       }
     }
     
-    openingStyle.setFavoriteOpeningAsWhite(mostPopularAsWhite.getName());
-    openingStyle.setFavoriteOpeningAsBlackAgainstE4(mostPopularAgainstE4.getName());
-    openingStyle.setFavoriteOpeningAsBlackAgainstD4(mostPopularAgainstD4.getName());
-    if (mainWeaponAsWhite != null)
-      openingStyle.setStrongestOpeningAsWhite(mainWeaponAsWhite.getName());
-    if (mainWeaknessAsWhite != null)
-      openingStyle.setWeakestOpeningAsWhite(mainWeaknessAsWhite.getName());
-    if (mainWeaponAsBlack != null)
-      openingStyle.setStrongestOpeningAsBlack(mainWeaponAsBlack.getName());
-    if (mainWeaknessAsBlack != null)
-      openingStyle.setWeakestOpeningAsBlack(mainWeaknessAsBlack.getName());
-    if (mostPopularAsWhite.getMoves_lalg().get(0).equals("e2e4")) {
-      openingStyle.setPreferE4(true);
-    } else if (mostPopularAsWhite.getMoves_lalg().get(0).equals("d2d4")) {
-      openingStyle.setPreferD4(true);
-    }
-    
-    boolean semi = false;
-    if (!mostPopularAgainstE4.getMoves_lalg().get(1).equals("e7e5")) {
-      openingStyle.setPreferSemiOpenAsBlack(true);
-      semi = true;
-    }
-    if (!mostPopularAgainstD4.getMoves_lalg().get(1).equals("d7d5")) {
-      openingStyle.setPreferSemiClosedAsBlack(true);
-      semi = true;
-    }
-    openingStyle.setPreferSemiAsBlack(semi);
+
+    // Set opening styles as White.
+    whiteKeyOpenings.getWeapon().ifPresent(
+        weapon -> openingStyle.setStrongestOpeningAsWhite(weapon.getName()));
+    whiteKeyOpenings.getWeakness().ifPresent(
+        weakness -> openingStyle.setWeakestOpeningAsWhite(weakness.getName()));
+    whiteKeyOpenings.getMostPlayed().ifPresent(
+        mostPlayed -> {
+          openingStyle.setFavoriteOpeningAsWhite(mostPlayed.getName());
+          if (isD4(getOpening(mostPlayed))) {
+            openingStyle.setPreferE4(true);
+          } else if (isD4(getOpening(mostPlayed))) {
+            openingStyle.setPreferD4(true);
+          }
+        });
+
+    // Set opening styles as Black.
+    blackKeyOpenings.getWeapon().ifPresent(
+        weapon -> openingStyle.setStrongestOpeningAsBlack(weapon.getName()));
+    blackKeyOpenings.getWeakness().ifPresent(
+        weakness -> openingStyle.setWeakestOpeningAsBlack(weakness.getName()));
+    blackKeyOpenings.getMostPlayedAgainstE4().ifPresent(
+        mostVsE4 -> {
+          openingStyle.setFavoriteOpeningAsBlackAgainstE4(mostVsE4.getName());
+          if (!isSymetric(getOpening(mostVsE4))) {
+            openingStyle.setPreferSemiOpenAsBlack(true);
+            openingStyle.setPreferSemiAsBlack(true);
+          }
+        });
+    blackKeyOpenings.getMostPlayedAgainstE4().ifPresent(
+        mostVsD4 -> {
+          openingStyle.setFavoriteOpeningAsBlackAgainstD4(mostVsD4.getName());
+          if (!isSymetric(getOpening(mostVsD4))) {
+            openingStyle.setPreferSemiClosedAsBlack(true);
+            openingStyle.setPreferSemiAsBlack(true);
+          }
+        });
     return openingStyle;
+  }
+
+  private boolean isE4(ChessOpening opening) {
+    return opening.getMoves_lalg().get(0).equals("e2e4");
+  }
+
+  private boolean isD4(ChessOpening opening) {
+    return opening.getMoves_lalg().get(0).equals("d2d4");
+  }
+
+  private boolean isSymetric(ChessOpening opening) {
+    return (isE4(opening) && opening.getMoves_lalg().get(1).equals("e7e5"))
+      || (isD4(opening) && opening.getMoves_lalg().get(1).equals("d7d5"));
+  }
+
+  private ChessOpening getOpening(OpeningStat stat) {
+    return openingCache.getOpeningMap().get(stat.getName());
   }
   
   public String describeOpeningStyle(OpeningStyle openingStyle) {
