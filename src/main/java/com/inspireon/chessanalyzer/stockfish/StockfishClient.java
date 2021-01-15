@@ -75,10 +75,10 @@ public class StockfishClient {
     }
     
     public List<String> getBestMoves(Query query) {
-    	Stockfish engine = engines.remove();
-    	List<String> responses = engine.getAllBestMoves(query);
-    	engines.add(engine);
-    	return responses;
+      Stockfish engine = engines.remove();
+      List<String> responses = engine.getAllBestMoves(query);
+      engines.add(engine);
+      return responses;
     }
 
     public static class Builder {

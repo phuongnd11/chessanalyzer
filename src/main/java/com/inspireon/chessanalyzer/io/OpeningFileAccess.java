@@ -15,24 +15,24 @@ import com.inspireon.chessanalyzer.model.ChessTempoResult;
 
 @Component
 public class OpeningFileAccess {
-	@Autowired
-	private AppConfig appConfig;
-	
-	public ChessTempoResult getOpenings() {
-		String jsonString;
-		try {
-			String absoluteOpeningPath = new ClassPathResource(appConfig.getOpeningBookPath()).getFile().getAbsolutePath();
-			jsonString = Files.readString(Path.of(absoluteOpeningPath));
-			System.out.println("Loaded Opening book from " + absoluteOpeningPath);
-			ObjectMapper mapper = new ObjectMapper();
+  @Autowired
+  private AppConfig appConfig;
+  
+  public ChessTempoResult getOpenings() {
+    String jsonString;
+    try {
+      String absoluteOpeningPath = new ClassPathResource(appConfig.getOpeningBookPath()).getFile().getAbsolutePath();
+      jsonString = Files.readString(Path.of(absoluteOpeningPath));
+      System.out.println("Loaded Opening book from " + absoluteOpeningPath);
+      ObjectMapper mapper = new ObjectMapper();
 
-			ChessTempoResult chessTempoResult = mapper.readValue(jsonString, ChessTempoResult.class);
-			return chessTempoResult;
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-	}
+      ChessTempoResult chessTempoResult = mapper.readValue(jsonString, ChessTempoResult.class);
+      return chessTempoResult;
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return null;
+  }
 
 }

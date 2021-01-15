@@ -9,39 +9,39 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChessOpening {
-	
-	private String name;
-	
-	private List<String> moves_lalg;
-	
-	private String last_pos;
+  
+  private String name;
+  
+  private List<String> moves_lalg;
+  
+  private String last_pos;
 
-	public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
-		
-	}
-	
-	public String getName() {
-		return name;
-	}
+  public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
+    
+  }
+  
+  public String getName() {
+    return name;
+  }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+  public void setName(String name) {
+    this.name = name;
+  }
 
-	public List<String> getMoves_lalg() {
-		return moves_lalg;
-	}
+  public List<String> getMoves_lalg() {
+    return moves_lalg;
+  }
 
-	public void setMoves_lalg(List<String> moves_lalg) {
-		this.moves_lalg = moves_lalg;
-	}
+  public void setMoves_lalg(List<String> moves_lalg) {
+    this.moves_lalg = moves_lalg;
+  }
 
-	public String getLast_pos() {
-		return last_pos;
-	}
+  public String getLast_pos() {
+    return last_pos;
+  }
 
-	public void setLast_pos(String last_pos) {
-		this.last_pos = last_pos;
-	}
-	
+  public void setLast_pos(String last_pos) {
+    this.last_pos = last_pos;
+  }
+  
 }
