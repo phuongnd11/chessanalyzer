@@ -20,7 +20,7 @@ public class StyleAnalyzerService {
   
   @Autowired
   private GameDataAccess gameDataAccess;
-  
+
   @Autowired
   private OpeningCache openingCache;
 
@@ -83,14 +83,6 @@ public class StyleAnalyzerService {
     KeyOpenings blackKeyOpenings = getKeyOpenings(Perspective.AS_BLACK, openingStats);
     
     // Deeper opening analysis.
-    ChessOpening mostPopularAgainstD4 = null;
-    
-    for (OpeningStat opening : openingStats) {
-      if (openingCache.getOpeningMap().get(opening.getName()).getMoves_lalg().get(0).equals("d2d4")) {
-        mostPopularAgainstD4 = openingCache.getOpeningMap().get(opening.getName());
-      }
-    }
-    
 
     // Set opening styles as White.
     whiteKeyOpenings.getWeapon().ifPresent(
