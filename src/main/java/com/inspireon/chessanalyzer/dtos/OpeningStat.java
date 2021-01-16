@@ -4,6 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OpeningStat implements Comparable<OpeningStat> {
+  public enum Perspective {
+    AS_WHITE,
+    AS_BLACK,
+    EITHER
+  }
   
   private String name;
   
@@ -45,10 +50,47 @@ public class OpeningStat implements Comparable<OpeningStat> {
     this.blackDraw = 0;
     this.totalBlack = 0;
   }
+
+  public Integer getWinRate(Perspective perspective) {
+    switch (perspective) {
+      case AS_WHITE:
+        return getWinRateAsWhite();
+      case AS_BLACK:
+        return getWinRateAsBlack();
+      default:
+        return getWinRate();
+    }
+  }
   
   public Integer getWinRate() {
     if (totalGames == 0) return -1;
     return Math.round(won * 100 / totalGames);
+  }
+
+  /**
+   * Whether this opening has higher winrate in a certain perspective compared to another opening.
+   *
+   * @return true if this opening has strictly higher winrate in {@code perspective} compared to the
+   * {@code other} opening. Returns {@code true} if {@code other} is {@code null}.
+   */
+  public boolean hasHigherWinRate(OpeningStat other, Perspective perspective) {
+    if (other == null) {
+      return true;
+    }
+    return getWinRate(perspective) > other.getWinRate(perspective);
+  }
+
+  /**
+   * Whether this opening has lower winrate in a certain perspective compared to another opening.
+   *
+   * @return true if this opening has strictly lower winrate in {@code perspective} compared to the
+   * {@code other} opening. Returns {@code true} if {@code other} is {@code null}.
+   */
+  public boolean hasLowerWinRate(OpeningStat other, Perspective perspective) {
+    if (other == null) {
+      return true;
+    }
+    return getWinRate(perspective) > other.getWinRate(perspective);
   }
   
   public Integer getWinRateAsWhite() {
@@ -112,6 +154,30 @@ public class OpeningStat implements Comparable<OpeningStat> {
 
   public Integer getTotalGames() {
     return totalGames;
+  }
+
+  public Integer getTotalGames(Perspective perspective) {
+    switch (perspective) {
+      case AS_WHITE:
+        return totalWhite;
+      case AS_BLACK:
+        return totalBlack;
+      default:
+        return totalGames;
+    }
+  }
+
+  /**
+   * Whether this opening has been played in a certain perspective more than the other opening.
+   *
+   * @return true if this opening has strictly more games in {@code perspective} compared to the
+   * {@code other} opening. Returns {@code true} if {@code other} is {@code null}.
+   */
+  public boolean hasMoreGames(OpeningStat other, Perspective perspective) {
+    if (other == null) {
+      return true;
+    }
+    return getTotalGames(perspective) > other.getTotalGames(perspective);
   }
 
   public void setTotalGames(Integer totalGames) {
