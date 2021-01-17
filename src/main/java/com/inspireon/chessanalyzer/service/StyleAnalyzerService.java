@@ -79,7 +79,7 @@ public class StyleAnalyzerService {
       throws Exception {
     TreeSet<OpeningStat> openingStats = gameDataAccess.getOpenings(playerUsername);
 
-    // General opening alalysis.
+    // General opening analysis.
     KeyOpenings whiteKeyOpenings = getKeyOpenings(Perspective.AS_WHITE, openingStats);
     KeyOpenings blackKeyOpenings = getKeyOpenings(Perspective.AS_BLACK, openingStats);
     

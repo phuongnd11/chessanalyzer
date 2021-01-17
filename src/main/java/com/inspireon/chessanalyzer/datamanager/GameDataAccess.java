@@ -57,14 +57,14 @@ public class GameDataAccess {
   public PgnHolder getPgnHolder(String playerUsername, LocalDate localDate) throws IOException, MalformedURLException {
     PgnHolder pgn = null;
     if (!new File(getPgnFilePath(playerUsername, localDate.getMonthValue())).exists() || localDate.getMonth().equals(LocalDate.now().getMonth())) {
-      loadPgnFile(playerUsername, localDate.getMonthValue());
+      loadPgnFile(playerUsername, localDate.getYear(), localDate.getMonthValue());
     } 
     pgn = new PgnHolder(getPgnFilePath(playerUsername, localDate.getMonthValue()));
     return pgn;
   }
   
-  public void loadPgnFile(String playerUserName, int month) throws MalformedURLException, IOException {  
-      BufferedInputStream in = chessComApiClient.getPgnAsInputStream(playerUserName, month);
+  public void loadPgnFile(String playerUserName, int year, int month) throws MalformedURLException, IOException {  
+      BufferedInputStream in = chessComApiClient.getPgnAsInputStream(playerUserName, year, month);
     
       pgnFileAccess.writePgnFile(in, playerUserName, month);
     }
