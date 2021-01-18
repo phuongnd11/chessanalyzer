@@ -1,7 +1,5 @@
-package com.inspireon.chessanalyzer.cache;
+package com.inspireon.chessanalyzer.domain.cache;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,14 +7,12 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inspireon.chessanalyzer.AppConfig;
-import com.inspireon.chessanalyzer.io.OpeningFileAccess;
-import com.inspireon.chessanalyzer.model.ChessOpening;
-import com.inspireon.chessanalyzer.model.ChessTempoResult;
+import com.inspireon.chessanalyzer.common.io.OpeningFileAccess;
+import com.inspireon.chessanalyzer.domain.model.ChessOpening;
+import com.inspireon.chessanalyzer.domain.model.ChessTempoResult;
 
 import lombok.Getter;
 

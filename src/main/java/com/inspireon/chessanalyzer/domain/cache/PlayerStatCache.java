@@ -1,4 +1,4 @@
-package com.inspireon.chessanalyzer.cache;
+package com.inspireon.chessanalyzer.domain.cache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
 
 import com.github.bhlangonijr.chesslib.game.Game;
-import com.inspireon.chessanalyzer.dtos.OpeningStat;
+import com.inspireon.chessanalyzer.web.dtos.OpeningStat;
 
 import lombok.Getter;
 import lombok.Setter;

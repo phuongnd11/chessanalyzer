@@ -1,4 +1,4 @@
-package com.inspireon.chessanalyzer.controller;
+package com.inspireon.chessanalyzer.web.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.inspireon.chessanalyzer.dtos.PlayerOverview;
-import com.inspireon.chessanalyzer.service.ReportService;
+import com.inspireon.chessanalyzer.application.service.ReportService;
+import com.inspireon.chessanalyzer.web.dtos.PlayerOverview;
 
 
 @CrossOrigin(origins = { "http://localhost:3000"})

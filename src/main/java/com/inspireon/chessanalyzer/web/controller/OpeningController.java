@@ -1,4 +1,4 @@
-package com.inspireon.chessanalyzer.controller;
+package com.inspireon.chessanalyzer.web.controller;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,11 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.inspireon.chessanalyzer.dtos.OpeningStat;
-import com.inspireon.chessanalyzer.dtos.UserMistake;
-import com.inspireon.chessanalyzer.model.ChessOpening;
-import com.inspireon.chessanalyzer.model.ChessTempoResult;
-import com.inspireon.chessanalyzer.service.OpeningAnalyzerService;
+import com.inspireon.chessanalyzer.application.service.OpeningAnalyzerService;
+import com.inspireon.chessanalyzer.domain.model.ChessOpening;
+import com.inspireon.chessanalyzer.domain.model.ChessTempoResult;
+import com.inspireon.chessanalyzer.web.dtos.OpeningStat;
+import com.inspireon.chessanalyzer.web.dtos.UserMistake;
 
 
 @CrossOrigin(origins = { "http://localhost:3000"})

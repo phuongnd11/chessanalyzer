@@ -1,4 +1,4 @@
-package com.inspireon.chessanalyzer.model;
+package com.inspireon.chessanalyzer.domain.model;
 
 import java.util.List;
 

@@ -36,9 +36,8 @@ import com.github.bhlangonijr.chesslib.game.GameResult;
 import com.github.bhlangonijr.chesslib.move.Move;
 import com.github.bhlangonijr.chesslib.move.MoveList;
 import com.github.bhlangonijr.chesslib.pgn.PgnHolder;
-
-import com.inspireon.chessanalyzer.model.ChessOpening;
-import com.inspireon.chessanalyzer.model.ChessTempoResult;
+import com.inspireon.chessanalyzer.domain.model.ChessOpening;
+import com.inspireon.chessanalyzer.domain.model.ChessTempoResult;
 import com.inspireon.chessanalyzer.stockfish.engine.enums.Option;
 import com.inspireon.chessanalyzer.stockfish.engine.enums.Query;
 import com.inspireon.chessanalyzer.stockfish.engine.enums.QueryType;

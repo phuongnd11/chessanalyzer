@@ -1,4 +1,4 @@
-package com.inspireon.chessanalyzer.enums;
+package com.inspireon.chessanalyzer.common.enums;
 
 public enum ChessSite {
     CHESS_COM("chess.com"),

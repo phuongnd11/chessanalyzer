@@ -1,4 +1,4 @@
-package com.inspireon.chessanalyzer.dtos;
+package com.inspireon.chessanalyzer.web.dtos;
 
 import java.util.List;
 
