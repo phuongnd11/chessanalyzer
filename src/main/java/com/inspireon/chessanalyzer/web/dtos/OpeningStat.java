@@ -3,6 +3,9 @@ package com.inspireon.chessanalyzer.web.dtos;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.Data;
+
+@Data
 public class OpeningStat implements Comparable<OpeningStat> {
   public enum Perspective {
     AS_WHITE,
@@ -251,7 +254,7 @@ public class OpeningStat implements Comparable<OpeningStat> {
 
   @Override
   public int compareTo(OpeningStat o) {
-    return o.totalGames.compareTo(this.totalGames);
+    return this.getName().compareTo(o.getName());
   }
   
   

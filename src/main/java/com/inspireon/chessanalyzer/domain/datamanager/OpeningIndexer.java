@@ -93,9 +93,9 @@ public class OpeningIndexer {
             winrateByOpening.get(thisGameOpening.getName()).addOneDraw(isWhite);
             winRateByDay.get(playedDate.getDayOfWeek()).addOneDraw();
           } else {
-            winRateByDay.get(playedDate.getDayOfWeek()).addOneGame();    
-          }
-          winrateByOpening.get(thisGameOpening.getName()).addTotalGames(isWhite);
+            winRateByDay.get(playedDate.getDayOfWeek()).addOneGame();   
+            winrateByOpening.get(thisGameOpening.getName()).addTotalGames(isWhite);
+          }  
           winrateByOpening.get(thisGameOpening.getName()).getGameIds().add(game.getGameId());
        }
           
@@ -109,12 +109,13 @@ public class OpeningIndexer {
     }
     
     winrateByOpening.entrySet().forEach(gameOpenin -> {
-          if (gameOpenin.getValue().getTotalGames() > 2) {
-            System.out.println("winRate: " + Math.round(gameOpenin.getValue().getWon()*100/gameOpenin.getValue().getTotalGames()) +
-                "   total games : " + gameOpenin.getValue().getTotalGames() + "   " + gameOpenin.getKey()) ;
-              openingStats.add(gameOpenin.getValue());
-          }
-        });
+      if (gameOpenin.getValue().getTotalGames() > 2) {
+        //System.out.println("winRate: " + Math.round(gameOpenin.getValue().getWon()*100/gameOpenin.getValue().getTotalGames()) +
+        //    "   total games : " + gameOpenin.getValue().getTotalGames() + "   " + gameOpenin.getKey()) ;
+        openingStats.add(gameOpenin.getValue());
+      }
+    });
+    System.out.println(openingStats.size());
     playerStatCache.reloadOpeningStats(playerUsername, ChessSite.CHESS_COM.getName(), openingStats);
   }
 }
