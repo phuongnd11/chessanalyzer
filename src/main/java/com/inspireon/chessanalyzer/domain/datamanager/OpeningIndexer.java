@@ -28,28 +28,28 @@ import com.inspireon.chessanalyzer.web.dtos.WinRateStat;
 
 @Service
 public class OpeningIndexer {
-  
+
   @Autowired
   private GameDataAccess gameDataAccess;
-  
+
   @Autowired
   private PlayerStatCache playerStatCache;
-  
+
   @Autowired
   private OpeningFileAccess openingFileAccess;
   
   @Autowired
   private AppConfig appConfig;
-  
+
   public void indexOpening(String playerUsername) throws Exception {
     ChessTempoResult chessTempoResult = openingFileAccess.getOpenings();
-    
+
     Map<String, ChessOpening> openings = new HashMap<String, ChessOpening>();
-    
+
     for (ChessOpening chessOpening : chessTempoResult.getOpenings()) {
       openings.put(chessOpening.getLast_pos().split(" ")[0], chessOpening);
     }
-    
+
     int numOfGames = 0;
     int numOfMonths = 0;
     TreeSet <OpeningStat> openingStats = new TreeSet<OpeningStat>();
@@ -81,7 +81,7 @@ public class OpeningIndexer {
             thisGameOpening = new ChessOpening();
             thisGameOpening.setName("Unknown");
           }
-              
+
           if (winrateByOpening.get(thisGameOpening.getName()) == null) {
             OpeningStat openStat = new OpeningStat(thisGameOpening.getName(), 0, 0, 0, null);
             winrateByOpening.put(thisGameOpening.getName(), openStat);
@@ -102,7 +102,7 @@ public class OpeningIndexer {
           }  
           winrateByOpening.get(thisGameOpening.getName()).getGameIds().add(game.getGameId());
        }
-          
+
        numOfGames += pgn.getGames().size();
        localDate = localDate.minusMonths(1);
        if (numOfGames >= appConfig.getChesscomNumOfGamesLimit() || numOfMonths > appConfig.getChesscomNumOfMonthsLimit()) {
@@ -111,7 +111,7 @@ public class OpeningIndexer {
        playerStatCache.reloadGames(playerUsername, ChessSite.CHESS_COM.getName(), pgn.getGames());
        playerStatCache.reloadDayOfWeekStat(playerUsername, ChessSite.CHESS_COM.getName(), winRateByDay);
     }
-    
+
     winrateByOpening.entrySet().forEach(gameOpenin -> {
       if (gameOpenin.getValue().getTotalGames() > 2) {
         //System.out.println("winRate: " + Math.round(gameOpenin.getValue().getWon()*100/gameOpenin.getValue().getTotalGames()) +
