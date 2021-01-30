@@ -22,7 +22,8 @@ public class OpeningController {
   private OpeningAnalyzerService openingAnalyzerService;
   
   @RequestMapping("/opening/mistakes")
-  public List <UserMistake> getOpeningMistakes(@RequestParam String playerUsername, @RequestParam String openingName) throws Exception {
+  public List <UserMistake> getOpeningMistakes(
+      @RequestParam String playerUsername, @RequestParam String openingName) throws Exception {
     
     return openingAnalyzerService.getOpeningMistakes(playerUsername, openingName);
   }
@@ -31,5 +32,4 @@ public class OpeningController {
   public TreeSet <OpeningStat> getOpenings(@RequestParam String playerUsername) throws Exception {
     return openingAnalyzerService.getOpenings(playerUsername);
   }
-  
 }

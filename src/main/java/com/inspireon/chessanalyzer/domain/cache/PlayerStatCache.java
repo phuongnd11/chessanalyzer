@@ -23,16 +23,19 @@ import lombok.Setter;
 public class PlayerStatCache {
 
   //username-site -> games
-  private ConcurrentHashMap<String, List<Game>> playerGames = new ConcurrentHashMap<String, List<Game>>();
+  private ConcurrentHashMap<String, List<Game>> playerGames = new ConcurrentHashMap<>();
   
   //username-site -> games
-  private ConcurrentHashMap<String, TreeSet<OpeningStat>> playerOpeningStats = new ConcurrentHashMap<String, TreeSet<OpeningStat>>();
+  private ConcurrentHashMap<String, TreeSet<OpeningStat>> playerOpeningStats =
+      new ConcurrentHashMap<>();
   
   //username-site -> opening category
-  private ConcurrentHashMap<String, TreeSet<OpeningStat>> playerOpeningStyle = new ConcurrentHashMap<String, TreeSet<OpeningStat>>();
+  private ConcurrentHashMap<String, TreeSet<OpeningStat>> playerOpeningStyle =
+      new ConcurrentHashMap<>();
 
   //username-site -> opening category
-  private ConcurrentHashMap<String, Map<DayOfWeek, WinRateStat>> dayOfWeekStats = new ConcurrentHashMap<String, Map<DayOfWeek, WinRateStat>>();
+  private ConcurrentHashMap<String, Map<DayOfWeek, WinRateStat>> dayOfWeekStats =
+      new ConcurrentHashMap<>();
 
   public void reloadGames(String player, String site, List<Game> games) {
     playerGames.putIfAbsent(player + "-" + site, new ArrayList<Game>());
@@ -44,7 +47,8 @@ public class PlayerStatCache {
     playerOpeningStats.computeIfPresent(player + "-" + site, (key, val) -> openingStats);
   }
 
-  public void reloadDayOfWeekStat(String player, String site, Map<DayOfWeek, WinRateStat> winRateByDay) {
+  public void reloadDayOfWeekStat(
+      String player, String site, Map<DayOfWeek, WinRateStat> winRateByDay) {
     dayOfWeekStats.putIfAbsent(player + "-" + site, new HashMap<DayOfWeek, WinRateStat>());
     dayOfWeekStats.computeIfPresent(player + "-" + site, (key, val) -> winRateByDay);
   }

@@ -1,12 +1,5 @@
 package com.inspireon.chessanalyzer.application.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeSet;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.game.Game;
 import com.github.bhlangonijr.chesslib.move.Move;
@@ -19,12 +12,19 @@ import com.inspireon.chessanalyzer.stockfish.engine.enums.Query;
 import com.inspireon.chessanalyzer.stockfish.engine.enums.QueryType;
 import com.inspireon.chessanalyzer.web.dtos.OpeningStat;
 import com.inspireon.chessanalyzer.web.dtos.UserMistake;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class OpeningAnalyzerService {
   @Autowired
   private GameDataAccess gameDataAccess;
-  
+
   public List <UserMistake> getOpeningMistakes(String playerUsername, String openingName)
       throws Exception {
     List<Game> games = gameDataAccess.getGames(playerUsername);

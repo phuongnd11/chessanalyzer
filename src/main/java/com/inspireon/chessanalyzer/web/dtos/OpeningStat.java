@@ -1,8 +1,10 @@
 package com.inspireon.chessanalyzer.web.dtos;
 
+import com.github.bhlangonijr.chesslib.PieceType;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
-
 import lombok.Data;
 
 @Data
@@ -34,6 +36,12 @@ public class OpeningStat implements Comparable<OpeningStat> {
   private Integer draw;
 
   private List<String> gameIds;
+
+  private Map<PieceType, Long> whitePieceMoveCount;
+
+  private Map<PieceType, Long> blackPieceMoveCount;
+
+  private Map<PieceType, Long> overallPieceMoveCount;
   
 
   public OpeningStat(String name, Integer won, Integer lost, Integer draw, List<String> gameIds) {
@@ -52,6 +60,20 @@ public class OpeningStat implements Comparable<OpeningStat> {
     this.blackWon = 0;
     this.blackDraw = 0;
     this.totalBlack = 0;
+    this.whitePieceMoveCount = initPieceMoveCount();
+    this.blackPieceMoveCount = initPieceMoveCount();
+    this.overallPieceMoveCount = initPieceMoveCount();
+  }
+
+  private static Map<PieceType, Long> initPieceMoveCount() {
+    Map<PieceType, Long> pieceMoveCount = new HashMap<>();
+    for (PieceType piece : PieceType.values()) {
+      if (piece == PieceType.NONE) {
+        continue;
+      }
+      pieceMoveCount.put(piece, 0L);
+    }
+    return pieceMoveCount;
   }
 
   public Integer getWinRate(Perspective perspective) {
@@ -104,6 +126,35 @@ public class OpeningStat implements Comparable<OpeningStat> {
   public Integer getWinRateAsBlack() {
     if (totalBlack == 0) return -1;
     return Math.round(blackWon * 100 / totalBlack);
+  }
+
+  public void addPieceMoveCounts(
+      Map<PieceType, Long> pieceMoveCount, Perspective perspective) {
+    if (perspective == Perspective.EITHER) {
+      throw new IllegalArgumentException(
+          "Adding piece move statistic must specify AS_BLACK or AS_WHITE specifically.");
+    }
+
+    for (Map.Entry<PieceType, Long> entry : pieceMoveCount.entrySet()) {
+      PieceType piece = entry.getKey();
+      if (perspective == Perspective.AS_WHITE) {
+        whitePieceMoveCount.put(piece, whitePieceMoveCount.get(piece) + entry.getValue());
+      } else if (perspective == Perspective.AS_BLACK) {
+        blackPieceMoveCount.put(piece, blackPieceMoveCount.get(piece) + entry.getValue());
+      }
+      overallPieceMoveCount.put(piece, overallPieceMoveCount.get(piece) + entry.getValue());
+    }
+  }
+
+  public Map<PieceType, Long> getPieceMoveCount(Perspective perspective) {
+    switch (perspective) {
+      case AS_WHITE:
+        return whitePieceMoveCount;
+      case AS_BLACK:
+        return blackPieceMoveCount;
+      default:
+        return overallPieceMoveCount;
+    }
   }
   
   public void addOneWin(boolean isWhite) {
