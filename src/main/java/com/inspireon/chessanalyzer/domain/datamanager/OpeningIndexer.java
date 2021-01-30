@@ -17,6 +17,7 @@ import com.github.bhlangonijr.chesslib.game.Game;
 import com.github.bhlangonijr.chesslib.game.GameResult;
 import com.github.bhlangonijr.chesslib.move.MoveList;
 import com.github.bhlangonijr.chesslib.pgn.PgnHolder;
+import com.inspireon.chessanalyzer.AppConfig;
 import com.inspireon.chessanalyzer.common.enums.ChessSite;
 import com.inspireon.chessanalyzer.common.io.OpeningFileAccess;
 import com.inspireon.chessanalyzer.domain.cache.PlayerStatCache;
@@ -36,6 +37,9 @@ public class OpeningIndexer {
   
   @Autowired
   private OpeningFileAccess openingFileAccess;
+  
+  @Autowired
+  private AppConfig appConfig;
   
   public void indexOpening(String playerUsername) throws Exception {
     ChessTempoResult chessTempoResult = openingFileAccess.getOpenings();
@@ -101,7 +105,7 @@ public class OpeningIndexer {
           
        numOfGames += pgn.getGames().size();
        localDate = localDate.minusMonths(1);
-       if (numOfGames >= 1000 || numOfMonths > 24) {
+       if (numOfGames >= appConfig.getChesscomNumOfGamesLimit() || numOfMonths > appConfig.getChesscomNumOfMonthsLimit()) {
          break;
        }
        playerStatCache.reloadGames(playerUsername, ChessSite.CHESS_COM.getName(), pgn.getGames());

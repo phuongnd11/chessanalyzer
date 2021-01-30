@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -57,9 +58,9 @@ public class ChessComApiClient {
       executor.execute(runnable);
   }
   
-  public BufferedInputStream getPgnAsInputStream(String playerUserName, int year, int month) throws MalformedURLException, IOException{
+  public BufferedInputStream getPgnAsInputStream(String playerUserName, LocalDate localDate) throws MalformedURLException, IOException{
     
-    String fullUrl = "https://api.chess.com/pub/player/" + playerUserName + "/games/" + year + "/" + month + "/pgn";
+    String fullUrl = "https://api.chess.com/pub/player/" + playerUserName + "/games/" + localDate.getYear() + "/" + localDate.getMonthValue() + "/pgn";
     String threadId = String.valueOf(Thread.currentThread().getId());
     ApiRequestInfo apiRequestInfo = ApiRequestInfo.builder()
     		.threadId(threadId)

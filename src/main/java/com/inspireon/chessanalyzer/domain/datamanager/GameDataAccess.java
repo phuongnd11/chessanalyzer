@@ -16,6 +16,7 @@ import com.github.bhlangonijr.chesslib.pgn.PgnHolder;
 import com.inspireon.chessanalyzer.application.clients.ChessComApiClient;
 import com.inspireon.chessanalyzer.common.enums.ChessSite;
 import com.inspireon.chessanalyzer.common.io.PgnFileAccess;
+import com.inspireon.chessanalyzer.common.utils.Utils;
 import com.inspireon.chessanalyzer.domain.cache.PlayerStatCache;
 import com.inspireon.chessanalyzer.web.dtos.OpeningStat;
 
@@ -56,20 +57,20 @@ public class GameDataAccess {
   
   public PgnHolder getPgnHolder(String playerUsername, LocalDate localDate) throws IOException, MalformedURLException {
     PgnHolder pgn = null;
-    if (!new File(getPgnFilePath(playerUsername, localDate.getMonthValue())).exists() || localDate.getMonth().equals(LocalDate.now().getMonth())) {
-      loadPgnFile(playerUsername, localDate.getYear(), localDate.getMonthValue());
+    if (!new File(getPgnFilePath(playerUsername, localDate)).exists() || Utils.isSameMonth(localDate, LocalDate.now())) {
+      loadPgnFile(playerUsername, localDate);
     } 
-    pgn = new PgnHolder(getPgnFilePath(playerUsername, localDate.getMonthValue()));
+    pgn = new PgnHolder(getPgnFilePath(playerUsername, localDate));
     return pgn;
   }
   
-  public void loadPgnFile(String playerUserName, int year, int month) throws MalformedURLException, IOException {  
-      BufferedInputStream in = chessComApiClient.getPgnAsInputStream(playerUserName, year, month);
+  public void loadPgnFile(String playerUserName, LocalDate localDate) throws MalformedURLException, IOException {  
+      BufferedInputStream in = chessComApiClient.getPgnAsInputStream(playerUserName, localDate);
     
-      pgnFileAccess.writePgnFile(in, playerUserName, month);
+      pgnFileAccess.writePgnFile(in, playerUserName, localDate);
     }
   
-  public String getPgnFilePath(String playerUserName, int month) throws IOException {
-    return pgnFileAccess.getPgnFilePath(playerUserName, month);
+  public String getPgnFilePath(String playerUserName, LocalDate localDate) throws IOException {
+    return pgnFileAccess.getPgnFilePath(playerUserName, localDate);
   }
 }

@@ -15,15 +15,21 @@ public class AppConfig {
   @Value("${chessanalyzer.gamebase.folder}")
   private String gameBaseFolder;
   
-  @Value("${chessanalyzer.chesscom.queue.size}")
+  @Value("${chessanalyzer.chesscom.queue.size:5000}")
   private int chesscomQueueSize;
   
-  @Value("${chessanalyzer.chesscom.queue.put.timeout}")
+  @Value("${chessanalyzer.chesscom.queue.put.timeout:10000}")
   private long chesscomQueueInputTimeout;
   
-  @Value("${chessanalyzer.chesscom.requests.limit}")
+  @Value("${chessanalyzer.chesscom.requests.limit:10}")
   private int chesscomRequestsLimit;
   
-  @Value("${chessanalyzer.chesscom.response.timeout}")
+  @Value("${chessanalyzer.chesscom.response.timeout:10000}")
   private long chesscomResponseTimeout;
+  
+  @Value("${chessanalyzer.chesscom.months.limit:24}")
+  private int chesscomNumOfMonthsLimit;
+  
+  @Value("${chessanalyzer.chesscom.games.limit:1000}")
+  private long chesscomNumOfGamesLimit;
 }
