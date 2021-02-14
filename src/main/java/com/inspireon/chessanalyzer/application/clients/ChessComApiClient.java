@@ -5,13 +5,13 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.PostConstruct;
 
@@ -22,64 +22,45 @@ import com.inspireon.chessanalyzer.AppConfig;
 
 @Component
 public class ChessComApiClient {
-  private BlockingQueue<ApiRequestInfo> queue;
-  private Map<String, ApiRequestInfo> requestMap = new HashMap<>();
   
   @Autowired
   private AppConfig appConfig;
   
+  private ExecutorService executor;
+  
   @PostConstruct
   public void init() {
-	  queue = new ArrayBlockingQueue<ApiRequestInfo>(appConfig.getChesscomQueueSize());
+    executor = Executors.newFixedThreadPool(appConfig.getChesscomRequestsLimit());
+  }
+  
+  private BufferedInputStream requestApi(String fullUrl) {
+	BufferedInputStream in = null;
+	if (fullUrl != null) {
+	  System.out.println("Calling chess.com api: " + fullUrl);
 	  
-	  Runnable runnable = () -> {
-		  while(true) {
-			  try {
-				ApiRequestInfo apiRequestInfo = queue.take();
-				if (apiRequestInfo != null) {
-					String fullUrl = apiRequestInfo.getUrl();
-					System.out.println("Calling chess.com api: " + fullUrl);
-					BufferedInputStream in = new BufferedInputStream(new URL(fullUrl).openStream());
-					apiRequestInfo.setInputStream(in);
-					apiRequestInfo.setDone(true);
-				}
-				
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		  }
-      };
-      
-      ExecutorService executor = Executors.newFixedThreadPool(appConfig.getChesscomRequestsLimit());
-      executor.execute(runnable);
+	  try {
+		in = new BufferedInputStream(new URL(fullUrl).openStream());
+	  } catch (IOException e) {
+		e.printStackTrace();
+	  }
+	}
+	return in;
   }
   
   public BufferedInputStream getPgnAsInputStream(String playerUserName, LocalDate localDate) throws MalformedURLException, IOException{
     
     String fullUrl = "https://api.chess.com/pub/player/" + playerUserName + "/games/" + localDate.getYear() + "/" + localDate.getMonthValue() + "/pgn";
-    String threadId = String.valueOf(Thread.currentThread().getId());
-    ApiRequestInfo apiRequestInfo = ApiRequestInfo.builder()
-    		.threadId(threadId)
-    		.url(fullUrl)
-    		.build();
-    try {
-		queue.offer(apiRequestInfo, appConfig.getChesscomQueueInputTimeout(), TimeUnit.MILLISECONDS);
-	} catch (InterruptedException e) {
-		e.printStackTrace();
-	}
-    requestMap.put(threadId, apiRequestInfo);
-    
+    Future<BufferedInputStream> future = executor.submit(() -> requestApi(fullUrl));
+
     // get results
     long timeout = appConfig.getChesscomResponseTimeout();
-    long currentTime = System.currentTimeMillis();
     
-    while (!apiRequestInfo.isDone() && System.currentTimeMillis() <= currentTime + timeout) {};
-    BufferedInputStream bufferedInputStream = (BufferedInputStream) apiRequestInfo.getInputStream();
-    requestMap.remove(threadId);
+    BufferedInputStream bufferedInputStream = null;
+	try {
+		bufferedInputStream = future.get(timeout, TimeUnit.MILLISECONDS);
+	} catch (InterruptedException | ExecutionException | TimeoutException e) {
+		e.printStackTrace();
+	}
     return bufferedInputStream;
   }
 

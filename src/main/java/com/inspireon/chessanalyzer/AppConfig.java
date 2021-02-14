@@ -15,12 +15,6 @@ public class AppConfig {
   @Value("${chessanalyzer.gamebase.folder}")
   private String gameBaseFolder;
   
-  @Value("${chessanalyzer.chesscom.queue.size:5000}")
-  private int chesscomQueueSize;
-  
-  @Value("${chessanalyzer.chesscom.queue.put.timeout:10000}")
-  private long chesscomQueueInputTimeout;
-  
   @Value("${chessanalyzer.chesscom.requests.limit:10}")
   private int chesscomRequestsLimit;
   

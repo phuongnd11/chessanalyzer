@@ -7,6 +7,8 @@ import java.net.MalformedURLException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -65,10 +67,11 @@ public class GameDataAccess {
   }
   
   public void loadPgnFile(String playerUserName, LocalDate localDate) throws MalformedURLException, IOException {  
-      BufferedInputStream in = chessComApiClient.getPgnAsInputStream(playerUserName, localDate);
-    
+    BufferedInputStream in = chessComApiClient.getPgnAsInputStream(playerUserName, localDate);
+    if (in != null) {
       pgnFileAccess.writePgnFile(in, playerUserName, localDate);
     }
+  }
   
   public String getPgnFilePath(String playerUserName, LocalDate localDate) throws IOException {
     return pgnFileAccess.getPgnFilePath(playerUserName, localDate);
