@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -17,11 +18,12 @@ public class PgnFileAccess {
   @Autowired
   private AppConfig appConfig;
   
-  public void writePgnFile(BufferedInputStream in, String playerUserName, int month) throws MalformedURLException, IOException {  
-    String pgnFilePath = getPgnFilePath(playerUserName, month);
+  public void writePgnFile(BufferedInputStream in, String playerUserName, LocalDate localDate) throws MalformedURLException, IOException {  
+    String pgnFilePath = getPgnFilePath(playerUserName, localDate);
       File pgnFile = new File(pgnFilePath);
       System.out.println(pgnFile.getAbsolutePath());
       if (!pgnFile.exists()) {
+    	pgnFile.getParentFile().mkdirs();
         pgnFile.createNewFile();
       }
     FileOutputStream fileOutputStream = new FileOutputStream(pgnFile); 
@@ -32,8 +34,11 @@ public class PgnFileAccess {
       }
   }
   
-  public String getPgnFilePath(String playerUserName, int month) throws IOException {
-    return new ClassPathResource(appConfig.getGameBaseFolder()).getFile().getAbsolutePath() + File.separator + playerUserName + "_" + month + ".pgn";
+  public String getPgnFilePath(String playerUserName, LocalDate localDate) throws IOException {
+    return new ClassPathResource(appConfig.getGameBaseFolder()).getFile().getAbsolutePath() 
+    		+ File.separator + playerUserName 
+    		+ File.separator + playerUserName 
+    		+ "_" + localDate.getYear() + "_" + localDate.getMonthValue() + ".pgn";
   }
 
 }
