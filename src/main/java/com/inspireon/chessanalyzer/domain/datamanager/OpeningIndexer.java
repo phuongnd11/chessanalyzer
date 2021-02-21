@@ -7,6 +7,7 @@ import com.github.bhlangonijr.chesslib.game.GameResult;
 import com.github.bhlangonijr.chesslib.move.Move;
 import com.github.bhlangonijr.chesslib.move.MoveList;
 import com.github.bhlangonijr.chesslib.pgn.PgnHolder;
+import com.inspireon.chessanalyzer.AppConfig;
 import com.inspireon.chessanalyzer.common.enums.ChessSite;
 import com.inspireon.chessanalyzer.common.io.OpeningFileAccess;
 import com.inspireon.chessanalyzer.domain.cache.PlayerStatCache;
@@ -39,10 +40,13 @@ public class OpeningIndexer {
   @Autowired
   private OpeningFileAccess openingFileAccess;
 
+  @Autowired
+  private AppConfig appConfig;
+
   // A static mapping of chess openings.
   private static Map<String, ChessOpening> openings;
 
-  private static final int OPENING_LIMIT = 15;
+  private static final int OPENING_LIMIT = 30;
 
   private static final int MINIMUM_MOVE_FOR_GAME = 4;
 
@@ -63,14 +67,16 @@ public class OpeningIndexer {
       numOfMonths++;
       PgnHolder pgn = gameDataAccess.getPgnHolder(playerUsername, localDate);
       pgn.loadPgn(); 
+      int totalBackwardMoves = 0;
       for (Game game: pgn.getGames()) {
         game.loadMoveText();  
         if (game.getHalfMoves().size() < MINIMUM_MOVE_FOR_GAME) {
           continue;
         }
 
-        OpeningAttributesForGame openingAttributeForGame = getOpeningAttributesForGame(game);
-        String openingName = openingAttributeForGame.getChessOpening().getName();
+        GameAttributes gameAttributes = getOpeningAttributesForGame(game, playerUsername);
+        String openingName = gameAttributes.getChessOpening().getName();
+        totalBackwardMoves += gameAttributes.getOpeningBackwardMoves();
 
         if (openingsStat.get(openingName) == null) {
           OpeningStat openStat = new OpeningStat(openingName, 0, 0, 0, null);
@@ -80,8 +86,8 @@ public class OpeningIndexer {
         boolean isWhite = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername);
         openingsStat.get(openingName).addPieceMoveCounts(
             isWhite
-                ? openingAttributeForGame.getWhitePieceMoveCount()
-                : openingAttributeForGame.getBlackPieceMoveCount(),
+                ? gameAttributes.getWhitePieceMoveCount()
+                : gameAttributes.getBlackPieceMoveCount(),
             isWhite ? Perspective.AS_WHITE : Perspective.AS_BLACK);
 
         LocalDate playedDate = getDateFor(game);
@@ -103,12 +109,15 @@ public class OpeningIndexer {
           
       numOfGames += pgn.getGames().size();
       localDate = localDate.minusMonths(1);
-      if (numOfGames >= 1000 || numOfMonths > 24) {
+      if (numOfGames >= appConfig.getChesscomNumOfGamesLimit()
+          || numOfMonths > appConfig.getChesscomNumOfMonthsLimit()) {
         break;
       }
       playerStatCache.reloadGames(playerUsername, ChessSite.CHESS_COM.getName(), pgn.getGames());
       playerStatCache.reloadDayOfWeekStat(
           playerUsername, ChessSite.CHESS_COM.getName(), winRateByDay);
+       playerStatCache.reloadBackwardMoves(
+           playerUsername, ChessSite.CHESS_COM.getName(), totalBackwardMoves);
     }
     
     TreeSet <OpeningStat> openingStats = new TreeSet<OpeningStat>();
@@ -154,12 +163,14 @@ public class OpeningIndexer {
     return LocalDate.parse(game.getDate().replace('.', '-'));   
   }
 
-  private static OpeningAttributesForGame getOpeningAttributesForGame(Game game) {
+  private static GameAttributes getOpeningAttributesForGame(Game game, String playerUsername) {
     Map<Integer, Map<PieceType, Long> > accumulatePieceMoveCount = new HashMap<>();
     Board board = new Board();
     MoveList moves = game.getHalfMoves();
     ChessOpening thisGameOpening = null;
     int lastOpeningMove = 0;
+    int openingBackwardMoves = 0;
+    boolean isWhite = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername);
 
     for (int i = 0; i < moves.size(); i++) {
 
@@ -175,6 +186,18 @@ public class OpeningIndexer {
           }
           thisGameOpening = openings.get(board.getFen().split(" ")[0]);
         }
+
+        // Calculating backward move.
+        if (isWhite && getPerspective(i) == Perspective.AS_WHITE) {
+          if(moves.get(i).getFrom().getRank().compareTo(moves.get(i).getTo().getRank()) > 0) {
+            openingBackwardMoves++;
+          }
+        }
+        if (!isWhite && getPerspective(i) == Perspective.AS_BLACK) {
+          if(moves.get(i).getFrom().getRank().compareTo(moves.get(i).getTo().getRank()) < 0) {
+            openingBackwardMoves++;
+          }
+        }
       }
       calculatePieceMoveCount(
           board, thisMove, /* moveIndex= */ i, accumulatePieceMoveCount);
@@ -186,14 +209,15 @@ public class OpeningIndexer {
       thisGameOpening.setName("Unknown");
     }
 
-    return OpeningAttributesForGame.builder()
+    return GameAttributes.builder()
         .chessOpening(thisGameOpening)
         .whitePieceMoveCount(
-            getMiddleGamePieceMoveCount(
+            getPieceMoveCountAfterOpening(
                 accumulatePieceMoveCount, Perspective.AS_WHITE, lastOpeningMove, moves.size()))
         .blackPieceMoveCount(
-            getMiddleGamePieceMoveCount(
+            getPieceMoveCountAfterOpening(
                 accumulatePieceMoveCount, Perspective.AS_BLACK, lastOpeningMove, moves.size()))
+        .openingBackwardMoves(openingBackwardMoves)
         .build();
   }
 
@@ -229,7 +253,7 @@ public class OpeningIndexer {
     return pieceMoveCount;
   }
 
-  private static Map<PieceType, Long> getMiddleGamePieceMoveCount(
+  private static Map<PieceType, Long> getPieceMoveCountAfterOpening(
       Map<Integer, Map<PieceType, Long> > accumulateCount,
       Perspective perspective,
       int lastOpeningMove,
@@ -269,18 +293,21 @@ public class OpeningIndexer {
     return copy;
   }
 
-  // Contains specific statistic at the opening stage of a specific game.
+  // Contains specific statistic of a specific game.
   @lombok.Builder
   @Data
-  private static class OpeningAttributesForGame {
+  private static class GameAttributes {
 
     // The the opening variation played.
     private ChessOpening chessOpening;
 
-    // The statistic of piece moved by White.
+    // The statistic of piece moved by White after the middle game.
     private Map<PieceType, Long> whitePieceMoveCount;
 
-    // The statistic of piece moved by Black.
+    // The statistic of piece moved by Black after the middle game.
     private Map<PieceType, Long> blackPieceMoveCount;
+
+    // The count of the backward moves in the opening by the queried player.
+    private int openingBackwardMoves;
   }
 }

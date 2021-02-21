@@ -36,6 +36,9 @@ public class PlayerStatCache {
   //username-site -> opening category
   private ConcurrentHashMap<String, Map<DayOfWeek, WinRateStat>> dayOfWeekStats =
       new ConcurrentHashMap<>();
+  
+  //username-site -> num of backward moves
+  private ConcurrentHashMap<String, Integer> backwardMoves = new ConcurrentHashMap<>();
 
   public void reloadGames(String player, String site, List<Game> games) {
     playerGames.putIfAbsent(player + "-" + site, new ArrayList<Game>());
@@ -52,4 +55,9 @@ public class PlayerStatCache {
     dayOfWeekStats.putIfAbsent(player + "-" + site, new HashMap<DayOfWeek, WinRateStat>());
     dayOfWeekStats.computeIfPresent(player + "-" + site, (key, val) -> winRateByDay);
   }
+  
+  public void reloadBackwardMoves(String player, String site, Integer numOfbackwardMoves) {
+      backwardMoves.putIfAbsent(player + "-" + site, numOfbackwardMoves);
+      backwardMoves.computeIfPresent(player + "-" + site, (key, val) -> numOfbackwardMoves);
+    }
 }
