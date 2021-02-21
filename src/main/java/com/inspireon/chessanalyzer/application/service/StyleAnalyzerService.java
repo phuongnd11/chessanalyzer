@@ -127,10 +127,16 @@ public class StyleAnalyzerService {
   }
 
   private boolean isE4(ChessOpening opening) {
+    if (opening == null) {
+        return false;
+    }
     return opening.getMoves_lalg().get(0).equals("e2e4");
   }
 
   private boolean isD4(ChessOpening opening) {
+      if (opening == null) {
+          return false;
+      }
     return opening.getMoves_lalg().get(0).equals("d2d4");
   }
 

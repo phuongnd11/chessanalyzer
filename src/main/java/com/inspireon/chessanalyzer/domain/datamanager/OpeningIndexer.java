@@ -63,6 +63,7 @@ public class OpeningIndexer {
       numOfMonths++;
       PgnHolder pgn = gameDataAccess.getPgnHolder(playerUsername, localDate);
       pgn.loadPgn(); 
+      int backwardMoves = 0;
         for (Game game: pgn.getGames()) {
           game.loadMoveText();  
           LocalDate playedDate = LocalDate.parse(game.getDate().replace('.', '-'));   
@@ -70,12 +71,28 @@ public class OpeningIndexer {
           if (moves.size() < 4) continue;
           Board board = new Board();
           ChessOpening thisGameOpening = null;
+          boolean isWhite = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername);
+          
           for (int i = 0; i < moves.size(); i++) {
             board.doMove(moves.get(i));
             if (openings.get(board.getFen().split(" ")[0]) != null)
             thisGameOpening = openings.get(board.getFen().split(" ")[0]);
             //System.out.println(board.getFen().split(" ")[0]);
-            if (i == 15) break;
+           
+            if (isWhite && i % 2 == 0) {
+                if(moves.get(i).getFrom().getRank()
+                        .compareTo(moves.get(i).getTo().getRank()) > 0) {
+                    backwardMoves++;
+                }
+            }
+            if (!isWhite && i%2!=0) {
+                if(moves.get(i).getFrom().getRank()
+                        .compareTo(moves.get(i).getTo().getRank()) < 0) {
+                    backwardMoves++;
+                }
+            }
+          
+            if (i == 30) break;
           }
           if (thisGameOpening == null) {
             thisGameOpening = new ChessOpening();
@@ -86,7 +103,7 @@ public class OpeningIndexer {
             OpeningStat openStat = new OpeningStat(thisGameOpening.getName(), 0, 0, 0, null);
             winrateByOpening.put(thisGameOpening.getName(), openStat);
           }
-          boolean isWhite = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername);
+          
           if (game.getResult() == GameResult.WHITE_WON && isWhite) {
             winrateByOpening.get(thisGameOpening.getName()).addOneWin(isWhite);
             winRateByDay.get(playedDate.getDayOfWeek()).addOneWin();
@@ -110,12 +127,13 @@ public class OpeningIndexer {
        }
        playerStatCache.reloadGames(playerUsername, ChessSite.CHESS_COM.getName(), pgn.getGames());
        playerStatCache.reloadDayOfWeekStat(playerUsername, ChessSite.CHESS_COM.getName(), winRateByDay);
+       playerStatCache.reloadBackwardMoves(playerUsername, ChessSite.CHESS_COM.getName(), backwardMoves);
     }
 
     winrateByOpening.entrySet().forEach(gameOpenin -> {
       if (gameOpenin.getValue().getTotalGames() > 2) {
-        //System.out.println("winRate: " + Math.round(gameOpenin.getValue().getWon()*100/gameOpenin.getValue().getTotalGames()) +
-        //    "   total games : " + gameOpenin.getValue().getTotalGames() + "   " + gameOpenin.getKey()) ;
+        System.out.println("winRate: " + Math.round(gameOpenin.getValue().getWon()*100/gameOpenin.getValue().getTotalGames()) +
+            "   total games : " + gameOpenin.getValue().getTotalGames() + "   " + gameOpenin.getKey()) ;
         openingStats.add(gameOpenin.getValue());
       }
     });
