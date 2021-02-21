@@ -79,7 +79,9 @@ public class OpeningIndexer {
 
         boolean isWhite = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername);
         openingsStat.get(openingName).addPieceMoveCounts(
-            openingAttributeForGame.getWhitePieceMoveCount(),
+            isWhite
+                ? openingAttributeForGame.getWhitePieceMoveCount()
+                : openingAttributeForGame.getBlackPieceMoveCount(),
             isWhite ? Perspective.AS_WHITE : Perspective.AS_BLACK);
 
         LocalDate playedDate = getDateFor(game);
@@ -153,27 +155,32 @@ public class OpeningIndexer {
   }
 
   private static OpeningAttributesForGame getOpeningAttributesForGame(Game game) {
-    ChessOpening thisGameOpening = null;
+    Map<Integer, Map<PieceType, Long> > accumulatePieceMoveCount = new HashMap<>();
     Board board = new Board();
-    Map<PieceType, Long> whitePieceMoveCount = initPieceMoveCount();
-    Map<PieceType, Long> blackPieceMoveCount = initPieceMoveCount();
-
     MoveList moves = game.getHalfMoves();
+    ChessOpening thisGameOpening = null;
+    int lastOpeningMove = 0;
+
     for (int i = 0; i < moves.size(); i++) {
-      // Stop after reaching the opening limit.
-      if (i > OPENING_LIMIT) {
-        break;
-      }
 
       Move thisMove = moves.get(i);
       board.doMove(thisMove);
-      if (openings.get(board.getFen().split(" ")[0]) != null) {
-        thisGameOpening = openings.get(board.getFen().split(" ")[0]);
+      // Only do opening analysis during the range.
+      if (i <= OPENING_LIMIT) {
+        if (openings.get(board.getFen().split(" ")[0]) != null) {
+          ChessOpening currentOpening = openings.get(board.getFen().split(" ")[0]);
+          if (thisGameOpening == null
+              || !thisGameOpening.getName().equals(currentOpening.getName())) {
+            lastOpeningMove = i;
+          }
+          thisGameOpening = openings.get(board.getFen().split(" ")[0]);
+        }
       }
-      increasePieceMoveCountByOne(
-          board, thisMove, whitePieceMoveCount, blackPieceMoveCount, isWhiteMove(i));
+      calculatePieceMoveCount(
+          board, thisMove, /* moveIndex= */ i, accumulatePieceMoveCount);
     }
 
+    // For unknown openning, the last openning move will be the first move.
     if (thisGameOpening == null) {
       thisGameOpening = new ChessOpening();
       thisGameOpening.setName("Unknown");
@@ -181,27 +188,34 @@ public class OpeningIndexer {
 
     return OpeningAttributesForGame.builder()
         .chessOpening(thisGameOpening)
-        .whitePieceMoveCount(whitePieceMoveCount)
-        .blackPieceMoveCount(blackPieceMoveCount)
+        .whitePieceMoveCount(
+            getMiddleGamePieceMoveCount(
+                accumulatePieceMoveCount, Perspective.AS_WHITE, lastOpeningMove, moves.size()))
+        .blackPieceMoveCount(
+            getMiddleGamePieceMoveCount(
+                accumulatePieceMoveCount, Perspective.AS_BLACK, lastOpeningMove, moves.size()))
         .build();
   }
 
-  private static boolean isWhiteMove(int moveIndex) {
-    return moveIndex % 2 == 0;
-  }
-
-  private static void increasePieceMoveCountByOne(
+  /**
+   * Record the accumulate of move by pieces up to |moveIndex|.
+   */
+  private static void calculatePieceMoveCount(
       Board board,
-      Move lastMove,
-      Map<PieceType, Long> whitePieceMoveCount,
-      Map<PieceType, Long> blackPieceMoveCount,
-      boolean isWhiteMove) {
-    PieceType piece = board.getPiece(lastMove.getTo()).getPieceType();
-    if (isWhiteMove) {
-      whitePieceMoveCount.put(piece, whitePieceMoveCount.get(piece) + 1);
-    } else {
-      blackPieceMoveCount.put(piece, blackPieceMoveCount.get(piece) + 1);
-    }
+      Move move,
+      int moveIndex,
+      Map<Integer, Map<PieceType, Long> > pieceMoveCountForAllTurns) {
+    // If we are still in the first turn, then instantiate all-zero-map, otherwise, copy the total
+    // count since previous turn for this player.
+    Map<PieceType, Long> pieceMoveCountToThisTurn =
+        (moveIndex <= 1) // still in the first turn
+            ? initPieceMoveCount()
+            : makeDeepCopy(pieceMoveCountForAllTurns.get(moveIndex - 2));
+
+    PieceType piece = board.getPiece(move.getTo()).getPieceType();
+    pieceMoveCountToThisTurn.put(piece, pieceMoveCountToThisTurn.get(piece) + 1);
+    pieceMoveCountForAllTurns.put(moveIndex, pieceMoveCountToThisTurn);
+
   }
 
   private static Map<PieceType, Long> initPieceMoveCount() {
@@ -210,10 +224,49 @@ public class OpeningIndexer {
       if (piece == PieceType.NONE) {
         continue;
       }
-
       pieceMoveCount.put(piece, 0L);
     }
     return pieceMoveCount;
+  }
+
+  private static Map<PieceType, Long> getMiddleGamePieceMoveCount(
+      Map<Integer, Map<PieceType, Long> > accumulateCount,
+      Perspective perspective,
+      int lastOpeningMove,
+      int totalMoves) {
+    int lastMoveInGame = totalMoves - 1;
+
+    int lastMoveByPlayer =
+        getPerspective(lastMoveInGame) == perspective ? lastMoveInGame : lastMoveInGame - 1;
+
+    // In case of unknown opening, we just return the total count from the beginning.
+    if (lastOpeningMove == 0) {
+      return makeDeepCopy(accumulateCount.get(lastMoveByPlayer));
+    }
+
+    int lastOpeningMoveByPlayer =
+        getPerspective(lastOpeningMove) == perspective ? lastOpeningMove : lastOpeningMove - 1;
+
+    Map<PieceType, Long> middleGameCount = initPieceMoveCount();
+    for (PieceType piece : middleGameCount.keySet()) {
+      long delta =
+          accumulateCount.get(lastMoveByPlayer).get(piece)
+              - accumulateCount.get(lastOpeningMoveByPlayer).get(piece);
+      middleGameCount.put(piece, delta);
+    }
+    return middleGameCount;
+  }
+
+  private static Perspective getPerspective(int moveIndex) {
+    return moveIndex % 2 == 0 ? Perspective.AS_WHITE : Perspective.AS_BLACK;
+  }
+
+  private static Map<PieceType, Long> makeDeepCopy(Map<PieceType, Long> target) {
+    Map<PieceType, Long> copy = new HashMap<>();
+    for (Map.Entry<PieceType, Long> entry : target.entrySet()) {
+      copy.put(entry.getKey(), entry.getValue());
+    }
+    return copy;
   }
 
   // Contains specific statistic at the opening stage of a specific game.
