@@ -39,6 +39,9 @@ public class PlayerStatCache {
   
   //username-site -> num of backward moves
   private ConcurrentHashMap<String, Integer> backwardMoves = new ConcurrentHashMap<>();
+  
+  //username-site -> num of games analyzed
+  private ConcurrentHashMap<String, Integer> gamesAnalyzed = new ConcurrentHashMap<String, Integer>();
 
   public void reloadGames(String player, String site, List<Game> games) {
     playerGames.putIfAbsent(player + "-" + site, new ArrayList<Game>());
@@ -59,5 +62,10 @@ public class PlayerStatCache {
   public void reloadBackwardMoves(String player, String site, Integer numOfbackwardMoves) {
       backwardMoves.putIfAbsent(player + "-" + site, numOfbackwardMoves);
       backwardMoves.computeIfPresent(player + "-" + site, (key, val) -> numOfbackwardMoves);
-    }
+  }
+  
+  public void reloadGamesAnalyzed(String player, String site, Integer numOfgamesAnalyzed) {
+      gamesAnalyzed.putIfAbsent(player + "-" + site, numOfgamesAnalyzed);
+      gamesAnalyzed.computeIfPresent(player + "-" + site, (key, val) -> numOfgamesAnalyzed);
+  }
 }

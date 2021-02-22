@@ -19,4 +19,5 @@ public class PlayerOverview {
   
   private Integer numberOfBackwardMoves;
   
+  private Integer gamesAnalyzed;
 }

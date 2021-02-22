@@ -118,6 +118,7 @@ public class OpeningIndexer {
           playerUsername, ChessSite.CHESS_COM.getName(), winRateByDay);
        playerStatCache.reloadBackwardMoves(
            playerUsername, ChessSite.CHESS_COM.getName(), totalBackwardMoves);
+       playerStatCache.reloadGamesAnalyzed(playerUsername, ChessSite.CHESS_COM.getName(), numOfGames);
     }
     
     TreeSet <OpeningStat> openingStats = new TreeSet<OpeningStat>();
@@ -135,6 +136,7 @@ public class OpeningIndexer {
     });
     System.out.println(openingStats.size());
     playerStatCache.reloadOpeningStats(playerUsername, ChessSite.CHESS_COM.getName(), openingStats);
+    playerStatCache.reloadGamesAnalyzed(playerUsername, ChessSite.CHESS_COM.getName(), numOfGames);
   }
 
   private Map<String, ChessOpening> getStaticOpeningMap() {

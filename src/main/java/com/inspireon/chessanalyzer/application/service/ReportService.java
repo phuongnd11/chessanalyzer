@@ -23,6 +23,9 @@ public class ReportService {
     OpeningStyle openingStyle = styleAnalyzerService.analyzeOpeningStyle(playerUsername);
     String style = styleAnalyzerService.describeOpeningStyle(openingStyle);
     
-    return builder.style(style).numberOfBackwardMoves(playerStatCache.getBackwardMoves().get(playerUsername + "-" + ChessSite.CHESS_COM.getName())).build();
+    return builder.style(style)
+      .numberOfBackwardMoves(playerStatCache.getBackwardMoves().get(playerUsername + "-" + ChessSite.CHESS_COM.getName()))
+      .gamesAnalyzed(playerStatCache.getGamesAnalyzed().get(playerUsername + "-" + ChessSite.CHESS_COM.getName()))
+      .build();
   }
 }
