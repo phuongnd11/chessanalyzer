@@ -62,12 +62,12 @@ public class OpeningIndexer {
     Map<DayOfWeek, WinRateStat> winRateByDay = initWinRateByDay();
 
     LocalDate localDate = LocalDate.now();
-
+    int totalBackwardMoves = 0;
     while (true) {
       numOfMonths++;
       PgnHolder pgn = gameDataAccess.getPgnHolder(playerUsername, localDate);
       pgn.loadPgn(); 
-      int totalBackwardMoves = 0;
+     
       for (Game game: pgn.getGames()) {
         game.loadMoveText();  
         if (game.getHalfMoves().size() < MINIMUM_MOVE_FOR_GAME) {
@@ -188,7 +188,7 @@ public class OpeningIndexer {
           }
           thisGameOpening = openings.get(board.getFen().split(" ")[0]);
         }
-
+        
         // Calculating backward move.
         if (isWhite && getPerspective(i) == Perspective.AS_WHITE) {
           if(moves.get(i).getFrom().getRank().compareTo(moves.get(i).getTo().getRank()) > 0) {
