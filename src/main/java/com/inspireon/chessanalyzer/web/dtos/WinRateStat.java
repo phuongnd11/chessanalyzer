@@ -1,7 +1,5 @@
 package com.inspireon.chessanalyzer.web.dtos;
 
-import lombok.Getter;
-
 public class WinRateStat {
   private Integer won;
 

@@ -26,6 +26,8 @@ public class ReportService {
     return builder.style(style)
       .numberOfBackwardMoves(playerStatCache.getBackwardMoves().get(playerUsername + "-" + ChessSite.CHESS_COM.getName()))
       .gamesAnalyzed(playerStatCache.getGamesAnalyzed().get(playerUsername + "-" + ChessSite.CHESS_COM.getName()))
+      .winRateByOpponentRating(playerStatCache.getWinRateByOpponentRating().get(playerUsername + "-" + ChessSite.CHESS_COM.getName()))
+      .winRateByCastle(playerStatCache.getWinRateByCastle().get(playerUsername + "-" + ChessSite.CHESS_COM.getName()))
       .build();
   }
 }

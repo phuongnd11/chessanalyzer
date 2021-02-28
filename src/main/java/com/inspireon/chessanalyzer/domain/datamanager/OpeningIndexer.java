@@ -1,5 +1,18 @@
 package com.inspireon.chessanalyzer.domain.datamanager;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.PieceType;
 import com.github.bhlangonijr.chesslib.game.Game;
@@ -8,7 +21,9 @@ import com.github.bhlangonijr.chesslib.move.Move;
 import com.github.bhlangonijr.chesslib.move.MoveList;
 import com.github.bhlangonijr.chesslib.pgn.PgnHolder;
 import com.inspireon.chessanalyzer.AppConfig;
+import com.inspireon.chessanalyzer.common.enums.Castle;
 import com.inspireon.chessanalyzer.common.enums.ChessSite;
+import com.inspireon.chessanalyzer.common.enums.Opponent;
 import com.inspireon.chessanalyzer.common.io.OpeningFileAccess;
 import com.inspireon.chessanalyzer.domain.cache.PlayerStatCache;
 import com.inspireon.chessanalyzer.domain.model.ChessOpening;
@@ -16,17 +31,8 @@ import com.inspireon.chessanalyzer.domain.model.ChessTempoResult;
 import com.inspireon.chessanalyzer.web.dtos.OpeningStat;
 import com.inspireon.chessanalyzer.web.dtos.OpeningStat.Perspective;
 import com.inspireon.chessanalyzer.web.dtos.WinRateStat;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
+
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 @Service
 public class OpeningIndexer {
@@ -53,16 +59,24 @@ public class OpeningIndexer {
   
   public void indexOpening(String playerUsername) throws Exception {
     Map<String, ChessOpening> openings = getStaticOpeningMap();
-
     
     int numOfGames = 0;
     int numOfMonths = 0;
 
     SortedMap<String, OpeningStat> openingsStat = new TreeMap<String, OpeningStat>();
     Map<DayOfWeek, WinRateStat> winRateByDay = initWinRateByDay();
-
+    Map<Opponent, WinRateStat> winRateByOpponentRating = new HashMap<Opponent, WinRateStat>();
+    winRateByOpponentRating.put(Opponent.LOWER_RATED, new WinRateStat());
+    winRateByOpponentRating.put(Opponent.HIGHER_RATED, new WinRateStat());
+    Map<Castle, WinRateStat> winRateByCastle = new HashMap<Castle, WinRateStat>();
+    winRateByCastle.put(Castle.NONE, new WinRateStat());
+    winRateByCastle.put(Castle.SHORT, new WinRateStat());
+    winRateByCastle.put(Castle.LONG, new WinRateStat());
+    
     LocalDate localDate = LocalDate.now();
     int totalBackwardMoves = 0;
+    List<Game> listGames = new ArrayList<Game>();
+    
     while (true) {
       numOfMonths++;
       PgnHolder pgn = gameDataAccess.getPgnHolder(playerUsername, localDate);
@@ -84,6 +98,10 @@ public class OpeningIndexer {
         }
 
         boolean isWhite = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername);
+        boolean isHigherRated = false;
+        if ((isWhite && game.getWhitePlayer().getElo() > game.getBlackPlayer().getElo()) || (!isWhite && game.getWhitePlayer().getElo() <= game.getBlackPlayer().getElo())) {
+            isHigherRated = true;
+        }
         openingsStat.get(openingName).addPieceMoveCounts(
             isWhite
                 ? gameAttributes.getWhitePieceMoveCount()
@@ -94,14 +112,22 @@ public class OpeningIndexer {
         if (game.getResult() == GameResult.WHITE_WON && isWhite) {
           openingsStat.get(openingName).addOneWin(isWhite);
           winRateByDay.get(playedDate.getDayOfWeek()).addOneWin();
+          winRateByOpponentRating.get(isHigherRated ? Opponent.LOWER_RATED : Opponent.HIGHER_RATED).addOneWin();       
+          winRateByCastle.get(gameAttributes.getCastle()).addOneWin();
         } else if (game.getResult() == GameResult.BLACK_WON && !isWhite) {
           openingsStat.get(openingName).addOneWin(isWhite);
           winRateByDay.get(playedDate.getDayOfWeek()).addOneWin();
+          winRateByOpponentRating.get(isHigherRated ? Opponent.LOWER_RATED : Opponent.HIGHER_RATED).addOneWin();
+          winRateByCastle.get(gameAttributes.getCastle()).addOneWin();
         } else if (game.getResult() == GameResult.DRAW) {
           openingsStat.get(openingName).addOneDraw(isWhite);
           winRateByDay.get(playedDate.getDayOfWeek()).addOneDraw();
+          winRateByOpponentRating.get(isHigherRated ? Opponent.LOWER_RATED : Opponent.HIGHER_RATED).addOneDraw();
+          winRateByCastle.get(gameAttributes.getCastle()).addOneDraw();
         } else {
           winRateByDay.get(playedDate.getDayOfWeek()).addOneGame();   
+          winRateByCastle.get(gameAttributes.getCastle()).addOneGame();
+          winRateByOpponentRating.get(isHigherRated ? Opponent.LOWER_RATED : Opponent.HIGHER_RATED).addOneGame();
           openingsStat.get(openingName).addTotalGames(isWhite);
         }  
         openingsStat.get(openingName).getGameIds().add(game.getGameId());
@@ -113,24 +139,20 @@ public class OpeningIndexer {
           || numOfMonths > appConfig.getChesscomNumOfMonthsLimit()) {
         break;
       }
-      playerStatCache.reloadGames(playerUsername, ChessSite.CHESS_COM.getName(), pgn.getGames());
-      playerStatCache.reloadDayOfWeekStat(
-          playerUsername, ChessSite.CHESS_COM.getName(), winRateByDay);
-       playerStatCache.reloadBackwardMoves(
-           playerUsername, ChessSite.CHESS_COM.getName(), totalBackwardMoves);
-       playerStatCache.reloadGamesAnalyzed(playerUsername, ChessSite.CHESS_COM.getName(), numOfGames);
+      listGames.addAll(pgn.getGames());
     }
     
+    playerStatCache.reloadGames(playerUsername, ChessSite.CHESS_COM.getName(), listGames);
+    playerStatCache.reloadDayOfWeekStat(
+        playerUsername, ChessSite.CHESS_COM.getName(), winRateByDay);
+    playerStatCache.reloadBackwardMoves(
+        playerUsername, ChessSite.CHESS_COM.getName(), totalBackwardMoves);
+    playerStatCache.reloadGamesAnalyzed(playerUsername, ChessSite.CHESS_COM.getName(), numOfGames);
+    playerStatCache.reloadWinRateByOpponentRating(playerUsername, ChessSite.CHESS_COM.getName(), winRateByOpponentRating);
+    playerStatCache.reloadWinRateByCastle(playerUsername, ChessSite.CHESS_COM.getName(), winRateByCastle);
     TreeSet <OpeningStat> openingStats = new TreeSet<OpeningStat>();
     openingsStat.entrySet().forEach(gameOpening -> {
       if (gameOpening.getValue().getTotalGames() > 2) {
-        //System.out.println(
-        //    "winRate: "
-        //        + Math.round(
-        //            gameOpening.getValue().getWon()*100/gameOpening.getValue().getTotalGames())
-        //        + "   total games : "
-        //        + gameOpening.getValue().getTotalGames()
-        //        + "   " + gameOpening.getKey()) ;
         openingStats.add(gameOpening.getValue());
       }
     });
@@ -138,7 +160,8 @@ public class OpeningIndexer {
     playerStatCache.reloadOpeningStats(playerUsername, ChessSite.CHESS_COM.getName(), openingStats);
     playerStatCache.reloadGamesAnalyzed(playerUsername, ChessSite.CHESS_COM.getName(), numOfGames);
   }
-
+  
+  
   private Map<String, ChessOpening> getStaticOpeningMap() {
     if (openings != null) {
       return openings;
@@ -173,10 +196,11 @@ public class OpeningIndexer {
     int lastOpeningMove = 0;
     int openingBackwardMoves = 0;
     boolean isWhite = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername);
-
+    Castle castle = Castle.NONE;
     for (int i = 0; i < moves.size(); i++) {
 
       Move thisMove = moves.get(i);
+      
       board.doMove(thisMove);
       // Only do opening analysis during the range.
       if (i <= OPENING_LIMIT) {
@@ -200,6 +224,14 @@ public class OpeningIndexer {
             openingBackwardMoves++;
           }
         }
+        if ((isWhite && getPerspective(i) == Perspective.AS_WHITE) || (!isWhite && getPerspective(i) == Perspective.AS_BLACK)) {
+          if (thisMove.getSan().equalsIgnoreCase("O-O")) {
+            castle = Castle.SHORT;
+          }
+          if (thisMove.getSan().equalsIgnoreCase("O-O-O")) {
+              castle = Castle.LONG;
+          }
+        }
       }
       calculatePieceMoveCount(
           board, thisMove, /* moveIndex= */ i, accumulatePieceMoveCount);
@@ -220,6 +252,7 @@ public class OpeningIndexer {
             getPieceMoveCountAfterOpening(
                 accumulatePieceMoveCount, Perspective.AS_BLACK, lastOpeningMove, moves.size()))
         .openingBackwardMoves(openingBackwardMoves)
+        .castle(castle)
         .build();
   }
 
@@ -311,5 +344,7 @@ public class OpeningIndexer {
 
     // The count of the backward moves in the opening by the queried player.
     private int openingBackwardMoves;
+    
+    private Castle castle;
   }
 }
