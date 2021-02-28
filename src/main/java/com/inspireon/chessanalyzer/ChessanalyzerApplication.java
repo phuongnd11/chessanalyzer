@@ -2,11 +2,18 @@ package com.inspireon.chessanalyzer;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @ComponentScan
-public class ChessanalyzerApplication {
+public class ChessanalyzerApplication extends SpringBootServletInitializer{
+    
+  @Override
+  protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+    return application.sources(ChessanalyzerApplication.class);
+  }  
 
   public static void main(String[] args) {
     SpringApplication.run(ChessanalyzerApplication.class, args);
