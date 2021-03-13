@@ -8,15 +8,14 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @ComponentScan
-public class ChessanalyzerApplication extends SpringBootServletInitializer{
-    
+public class ChessanalyzerApplication extends SpringBootServletInitializer {
+
   @Override
   protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
     return application.sources(ChessanalyzerApplication.class);
-  }  
-
+  }
+    
   public static void main(String[] args) {
     SpringApplication.run(ChessanalyzerApplication.class, args);
   }
-
 }
