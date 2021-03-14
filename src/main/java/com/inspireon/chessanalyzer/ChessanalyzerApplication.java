@@ -27,7 +27,7 @@ public class ChessanalyzerApplication extends SpringBootServletInitializer {
       return new WebMvcConfigurer() {
           @Override
           public void addCorsMappings(CorsRegistry registry) {
-              registry.addMapping("/**").allowedOrigins("chessstats.io");
+              registry.addMapping("/**").allowedOrigins("http://chessstats.io");
           }
       };
   }
