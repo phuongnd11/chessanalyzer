@@ -115,7 +115,7 @@ public class OpeningStat implements Comparable<OpeningStat> {
     if (other == null) {
       return true;
     }
-    return getWinRate(perspective) > other.getWinRate(perspective);
+    return getWinRate(perspective) < other.getWinRate(perspective);
   }
   
   public Integer getWinRateAsWhite() {

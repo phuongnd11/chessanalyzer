@@ -172,13 +172,13 @@ public class StyleAnalyzerService {
     }
     
     if (openingStyle.getStrongestOpeningAsWhite() != null) {
-      style.append(". Your main weapon is " + openingStyle.getStrongestOpeningAsWhite());
+      style.append(". Your main weapon (as White) is " + openingStyle.getStrongestOpeningAsWhite());
     } 
     if (openingStyle.getStrongestOpeningAsBlack() != null) {
-      if (style.toString().contains("Your main weapon is")) {
-        style.append(" and " + openingStyle.getStrongestOpeningAsBlack());
+      if (style.toString().contains("Your main weapon as White is")) {
+        style.append(" and " + openingStyle.getStrongestOpeningAsBlack() + " as Black.");
       } else {
-        style.append(". Your main weapon is " + openingStyle.getStrongestOpeningAsBlack());
+        style.append(". Your main weapon as Black is " + openingStyle.getStrongestOpeningAsBlack());
       }
     }
     if (openingStyle.getStrongestOpeningAsWhite() != null || openingStyle.getStrongestOpeningAsBlack() != null) {
@@ -186,13 +186,13 @@ public class StyleAnalyzerService {
     }
     
     if (openingStyle.getWeakestOpeningAsWhite() != null) {
-      style.append(" Your weakness lies in " + openingStyle.getWeakestOpeningAsWhite());
+      style.append(" Your weakness lies in " + openingStyle.getWeakestOpeningAsWhite() + " as White");
     } 
     if (openingStyle.getWeakestOpeningAsBlack() != null) {
       if (style.toString().contains("Your weakness lies in")) {
-        style.append(" and " + openingStyle.getWeakestOpeningAsBlack());
+        style.append(" and " + openingStyle.getWeakestOpeningAsBlack() + " as Black");
       } else {
-        style.append(". Your weakness lies in " + openingStyle.getWeakestOpeningAsBlack());
+        style.append(". Your weakness lies in " + openingStyle.getWeakestOpeningAsBlack() + " as Black");
       }
     }
     if (openingStyle.getWeakestOpeningAsWhite() != null || openingStyle.getWeakestOpeningAsBlack() != null) {
