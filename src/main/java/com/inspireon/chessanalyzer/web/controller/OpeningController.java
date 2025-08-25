@@ -21,6 +21,7 @@ public class OpeningController {
   @Autowired
   private OpeningAnalyzerService openingAnalyzerService;
   
+<<<<<<< Upstream, based on choose_remote_name/master
   @RequestMapping("/opening/mistakes")
   public List <UserMistake> getOpeningMistakes(
       @RequestParam String playerUsername, @RequestParam String openingName) throws Exception {
@@ -30,6 +31,19 @@ public class OpeningController {
   
   @RequestMapping("/opening")
   public TreeSet <OpeningStat> getOpenings(@RequestParam String playerUsername) throws Exception {
+=======
+  public List<UserMistake> getOpeningMistakes(
+		    @RequestParam("playerUsername") String playerUsername,
+		    @RequestParam("openingName") String openingName) throws Exception
+ {
+    
+    return openingAnalyzerService.getOpeningMistakes(playerUsername, openingName);
+  }
+  
+  @RequestMapping("/opening")
+  public TreeSet<OpeningStat> getOpenings(@RequestParam("playerUsername") String playerUsername) throws Exception
+  {
+>>>>>>> 1ef77b2 Fix build errors
     return openingAnalyzerService.getOpenings(playerUsername);
   }
 }
