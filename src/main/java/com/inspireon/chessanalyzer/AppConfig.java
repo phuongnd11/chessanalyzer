@@ -26,4 +26,22 @@ public class AppConfig {
   
   @Value("${chessanalyzer.chesscom.games.limit:1000}")
   private long chesscomNumOfGamesLimit;
+
+  @Value("${chessanalyzer.stockfish.path:}")
+  private String stockfishPath;
+
+  @Value("${chessanalyzer.engine.type:stockfish}")
+  private String engineType;
+
+  @Value("${chessanalyzer.chessapi.url:https://chess-api.com/v1}")
+  private String chessApiUrl;
+
+  @Value("${chessanalyzer.chessapi.default.depth:18}")
+  private int chessApiDefaultDepth;
+
+  @Value("${chessanalyzer.chessapi.default.variants:3}")
+  private int chessApiDefaultVariants;
+
+  @Value("${chessanalyzer.chessapi.default.thinking.time:50}")
+  private int chessApiDefaultThinkingTime;
 }

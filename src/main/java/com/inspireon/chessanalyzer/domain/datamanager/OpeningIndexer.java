@@ -33,8 +33,10 @@ import com.inspireon.chessanalyzer.web.dtos.OpeningStat.Perspective;
 import com.inspireon.chessanalyzer.web.dtos.WinRateStat;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class OpeningIndexer {
   
   @Autowired
@@ -58,6 +60,7 @@ public class OpeningIndexer {
 
   
   public void indexOpening(String playerUsername) throws Exception {
+    log.info("Indexing openings for player: {}", playerUsername);
     Map<String, ChessOpening> openings = getStaticOpeningMap();
     
     int numOfGames = 0;
@@ -81,6 +84,7 @@ public class OpeningIndexer {
       numOfMonths++;
       PgnHolder pgn = gameDataAccess.getPgnHolder(playerUsername, localDate);
       pgn.loadPgn(); 
+      log.info("Loaded {} games for {}/{}", pgn.getGames().size(), localDate.getYear(), localDate.getMonthValue());
      
       for (Game game: pgn.getGames()) {
         game.loadMoveText();  
@@ -134,9 +138,12 @@ public class OpeningIndexer {
       }
           
       numOfGames += pgn.getGames().size();
+      log.info("Accumulated games so far: {} (months: {})", numOfGames, numOfMonths);
       localDate = localDate.minusMonths(1);
       if (numOfGames >= appConfig.getChesscomNumOfGamesLimit()
           || numOfMonths > appConfig.getChesscomNumOfMonthsLimit()) {
+        log.info("Stopping indexing due to limit: gamesLimit={}, monthsLimit={}, totalGames={}, totalMonths={}",
+            appConfig.getChesscomNumOfGamesLimit(), appConfig.getChesscomNumOfMonthsLimit(), numOfGames, numOfMonths);
         break;
       }
       listGames.addAll(pgn.getGames());
@@ -156,7 +163,7 @@ public class OpeningIndexer {
         openingStats.add(gameOpening.getValue());
       }
     });
-    System.out.println(openingStats.size());
+    log.info("Opening stats entries: {} (filtered with >2 games)", openingStats.size());
     playerStatCache.reloadOpeningStats(playerUsername, ChessSite.CHESS_COM.getName(), openingStats);
     playerStatCache.reloadGamesAnalyzed(playerUsername, ChessSite.CHESS_COM.getName(), numOfGames);
   }

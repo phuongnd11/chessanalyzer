@@ -4,11 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-<<<<<<< Upstream, based on choose_remote_name/master
-import javax.annotation.PostConstruct;
-=======
 import jakarta.annotation.PostConstruct;
->>>>>>> 1ef77b2 Fix build errors
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

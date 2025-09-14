@@ -11,49 +11,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-<<<<<<< Upstream, based on choose_remote_name/master
-import org.springframework.stereotype.Component;
-
-import com.github.bhlangonijr.chesslib.game.Game;
-import com.github.bhlangonijr.chesslib.pgn.PgnHolder;
-import com.inspireon.chessanalyzer.application.clients.ChessComApiClient;
-import com.inspireon.chessanalyzer.common.enums.ChessSite;
-import com.inspireon.chessanalyzer.common.io.PgnFileAccess;
-import com.inspireon.chessanalyzer.common.utils.Utils;
-import com.inspireon.chessanalyzer.domain.cache.PlayerStatCache;
-import com.inspireon.chessanalyzer.web.dtos.OpeningStat;
-
-@Component
-public class GameDataAccess {
-  
-  @Autowired
-  private PgnFileAccess pgnFileAccess;
-  
-  @Autowired
-  private ChessComApiClient chessComApiClient;
-  
-  @Autowired
-  private PlayerStatCache playerStatCache;
-  
-  @Autowired
-  private OpeningIndexer openingIndexer;
-  
-  public List<Game> getGames(String playerUsername) throws Exception {
-    List<Game> games = playerStatCache.getPlayerGames().get(playerUsername + "-" + ChessSite.CHESS_COM.getName());
-    
-    if (games == null || games.size() == 0) {
-      openingIndexer.indexOpening(playerUsername);
-      games = playerStatCache.getPlayerGames().get(playerUsername + "-" + ChessSite.CHESS_COM.getName());
-    }
-    return games;
-  }
-  
-  public TreeSet <OpeningStat> getOpenings(String playerUsername) throws Exception {
-    TreeSet<OpeningStat> openingStatCache = playerStatCache.getPlayerOpeningStats().get(playerUsername + "-" + ChessSite.CHESS_COM.getName());
-    if (openingStatCache != null && openingStatCache.size() > 0) {
-      return openingStatCache;
-    }
-=======
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -65,8 +22,10 @@ import com.inspireon.chessanalyzer.common.io.PgnFileAccess;
 import com.inspireon.chessanalyzer.common.utils.Utils;
 import com.inspireon.chessanalyzer.domain.cache.PlayerStatCache;
 import com.inspireon.chessanalyzer.web.dtos.OpeningStat;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class GameDataAccess {
   
   @Autowired
@@ -86,8 +45,12 @@ public class GameDataAccess {
     List<Game> games = playerStatCache.getPlayerGames().get(playerUsername + "-" + ChessSite.CHESS_COM.getName());
     
     if (games == null || games.size() == 0) {
+      log.info("No cached games for {}. Indexing openings to load games...", playerUsername);
       openingIndexer.indexOpening(playerUsername);
       games = playerStatCache.getPlayerGames().get(playerUsername + "-" + ChessSite.CHESS_COM.getName());
+      log.info("Loaded {} games for {} after indexing", (games == null ? 0 : games.size()), playerUsername);
+    } else {
+      log.info("Found {} cached games for {}", games.size(), playerUsername);
     }
     return games;
   }
@@ -97,7 +60,6 @@ public class GameDataAccess {
     //if (openingStatCache != null && openingStatCache.size() > 0) {
    //   return openingStatCache;
     //}
->>>>>>> 1ef77b2 Fix build errors
     
     openingIndexer.indexOpening(playerUsername);
     return playerStatCache.getPlayerOpeningStats().get(playerUsername + "-" + ChessSite.CHESS_COM.getName());
@@ -106,16 +68,21 @@ public class GameDataAccess {
   public PgnHolder getPgnHolder(String playerUsername, LocalDate localDate) throws IOException, MalformedURLException {
     PgnHolder pgn = null;
     if (!new File(getPgnFilePath(playerUsername, localDate)).exists() || Utils.isSameMonth(localDate, LocalDate.now())) {
+      log.info("Fetching PGN for {} {}/{} from Chess.com (file missing or current month)", playerUsername, localDate.getYear(), localDate.getMonthValue());
       loadPgnFile(playerUsername, localDate);
     } 
     pgn = new PgnHolder(getPgnFilePath(playerUsername, localDate));
+    log.debug("PgnHolder created for {} -> {}", playerUsername, getPgnFilePath(playerUsername, localDate));
     return pgn;
   }
   
   public void loadPgnFile(String playerUserName, LocalDate localDate) throws MalformedURLException, IOException {  
     BufferedInputStream in = chessComApiClient.getPgnAsInputStream(playerUserName, localDate);
     if (in != null) {
+      log.debug("Writing PGN file for {} {}/{}", playerUserName, localDate.getYear(), localDate.getMonthValue());
       pgnFileAccess.writePgnFile(in, playerUserName, localDate);
+    } else {
+      log.warn("PGN InputStream is null for {} {}/{} — skipping write", playerUserName, localDate.getYear(), localDate.getMonthValue());
     }
   }
   
