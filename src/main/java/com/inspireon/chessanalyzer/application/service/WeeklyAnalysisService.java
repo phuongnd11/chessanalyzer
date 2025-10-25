@@ -33,7 +33,15 @@ import com.inspireon.chessanalyzer.web.dtos.WeeklyAnalysis;
 import com.inspireon.chessanalyzer.web.dtos.GameAnalysis;
 import com.inspireon.chessanalyzer.web.dtos.UserMistake;
 import com.inspireon.chessanalyzer.common.enums.TacticalTheme;
+import com.inspireon.chessanalyzer.application.service.UserMistakeService;
+import com.inspireon.chessanalyzer.application.service.UserProgressService;
+import com.inspireon.chessanalyzer.domain.documents.UserMistakeDocument;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -53,6 +61,12 @@ public class WeeklyAnalysisService {
 
   @Autowired
   private ChessApiClient chessApiClient;
+
+  @Autowired
+  private UserMistakeService userMistakeService;
+
+  @Autowired
+  private UserProgressService userProgressService;
 
   private static final int MULTI_PV = 3;
   private static final long MOVE_TIME_MS = 800; // per position
@@ -113,11 +127,70 @@ public class WeeklyAnalysisService {
 
   private List<UserMistake> analyzeMistakes(StockfishClient client, Game game, String playerUsername, boolean isWhite) 
       throws Exception {
+    log.info("Starting mistake analysis for game {}, player: {}, isWhite: {}", game.getGameId(), playerUsername, isWhite);
+    
+    // Step 1: Query database for unsolved mistakes (up to 10)
+    Set<String> solvedMistakeIds = userProgressService.getSolvedMistakeIds(playerUsername);
+    log.info("User {} has solved {} mistakes previously", playerUsername, solvedMistakeIds.size());
+    
+    List<UserMistakeDocument> unsolvedMistakes = getUserUnsolvedMistakes(playerUsername, solvedMistakeIds, 10);
+    
+    if (!unsolvedMistakes.isEmpty()) {
+      log.info("Found {} unsolved mistakes from database for user {}", unsolvedMistakes.size(), playerUsername);
+      
+      // Convert to DTOs and return immediately 
+      List<UserMistake> mistakeDtos = unsolvedMistakes.stream()
+          .map(userMistakeService::convertToDto)
+          .collect(Collectors.toList());
+      
+      log.info("Returning {} unsolved mistakes from database", mistakeDtos.size());
+      return mistakeDtos;
+    }
+    
+    // Step 2: No unsolved mistakes found, perform live analysis
+    log.info("No unsolved mistakes found in database, performing live analysis for game {}", game.getGameId());
+    List<UserMistake> newMistakes = performLiveAnalysis(client, game, playerUsername, isWhite);
+    
+    // Step 3: Save new mistakes to database
+    if (!newMistakes.isEmpty()) {
+      log.info("Saving {} new mistakes to database", newMistakes.size());
+      for (UserMistake mistake : newMistakes) {
+        UserMistakeDocument savedDoc = userMistakeService.saveMistakeFromDto(mistake);
+        log.debug("Saved mistake with ID: {}", savedDoc.getId());
+      }
+      
+      // Step 4: Start async background processing for more mistakes
+      if (newMistakes.size() < 10) {
+        log.info("Starting async background analysis to find more mistakes for user {}", playerUsername);
+        analyzeAdditionalMistakesAsync(playerUsername, 10 - newMistakes.size());
+      }
+    }
+    
+    return newMistakes;
+  }
+
+  private List<UserMistakeDocument> getUserUnsolvedMistakes(String username, Set<String> solvedIds, int limit) {
+    if (solvedIds.isEmpty()) {
+      // No solved mistakes, get any mistakes for this user
+      Pageable pageable = PageRequest.of(0, limit);
+      return userMistakeService.findByUsernamePaged(username, pageable).getContent();
+    } else {
+      // Get mistakes not in the solved set
+      List<UserMistakeDocument> allMistakes = userMistakeService.findByUsername(username);
+      return allMistakes.stream()
+          .filter(mistake -> !solvedIds.contains(mistake.getId()))
+          .limit(limit)
+          .collect(Collectors.toList());
+    }
+  }
+
+  private List<UserMistake> performLiveAnalysis(StockfishClient client, Game game, String playerUsername, boolean isWhite) 
+      throws Exception {
     game.loadMoveText();
     MoveList moves = game.getHalfMoves();
     Board board = new Board();
     
-    log.info("Starting mistake analysis for game {}, total moves: {}, isWhite: {}", game.getGameId(), moves.size(), isWhite);
+    log.info("Performing live analysis for game {}, total moves: {}, isWhite: {}", game.getGameId(), moves.size(), isWhite);
     
     List<UserMistake> mistakes = new ArrayList<>();
     int openingMistakes = 0;
@@ -147,7 +220,14 @@ public class WeeklyAnalysisService {
         continue;
       }
       
-      List<ComputerMove> computerMoves = getBestMovesForPosition(client, board.getFen(), isWhite);
+      List<ComputerMove> computerMoves;
+      try {
+        computerMoves = getBestMovesForPosition(client, board.getFen(), isWhite);
+      } catch (Exception e) {
+        log.debug("Failed to get computer moves for position ({}), skipping: {}", board.getFen(), e.getMessage());
+        board.doMove(move);
+        continue;
+      }
       
       if (computerMoves.isEmpty()) {
         log.debug("No computer moves found before position, skipping");
@@ -159,7 +239,13 @@ public class WeeklyAnalysisService {
       Board boardBeforeMove = board.clone(); // Clone board before applying user move
       board.doMove(move);
       
-      List<ComputerMove> afterMoves = getBestMovesForPosition(client, board.getFen(), !isWhite);
+      List<ComputerMove> afterMoves;
+      try {
+        afterMoves = getBestMovesForPosition(client, board.getFen(), !isWhite);
+      } catch (Exception e) {
+        log.debug("Failed to get computer moves after position ({}), skipping: {}", board.getFen(), e.getMessage());
+        continue;
+      }
       
       if (afterMoves.isEmpty()) {
         log.debug("No computer moves found after position, skipping");
@@ -255,10 +341,139 @@ public class WeeklyAnalysisService {
       }
     }
     
-    log.info("Analysis complete for game {}: playerMoves={}, mistakes={} (O:{}, M:{}, E:{})", 
+    log.info("Live analysis complete for game {}: playerMoves={}, mistakes={} (O:{}, M:{}, E:{})", 
         game.getGameId(), playerMovesAnalyzed, mistakes.size(), openingMistakes, middlegameMistakes, endgameMistakes);
     
     return mistakes;
+  }
+
+  @Async("mistakeAnalysisExecutor")
+  public CompletableFuture<Void> analyzeAdditionalMistakesAsync(String playerUsername, int targetCount) {
+    log.info("Starting async background analysis for {} additional mistakes for user {}", targetCount, playerUsername);
+    
+    try {
+      // Get more games for this user
+      List<Game> games = gameDataAccess.getGames(playerUsername);
+      StockfishClient stockfishClient = null;
+      if ("stockfish".equalsIgnoreCase(appConfig.getEngineType())) {
+        stockfishClient = buildClient();
+      }
+      
+      int mistakesFound = 0;
+      int gamesProcessed = 0;
+      int maxGamesToProcess = Math.min(games.size(), 5); // Limit background processing
+      
+      for (Game game : games) {
+        if (mistakesFound >= targetCount || gamesProcessed >= maxGamesToProcess) {
+          break;
+        }
+        
+        try {
+          String color = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername) ? "WHITE" : "BLACK";
+          boolean isWhite = color.equals("WHITE");
+          
+          List<UserMistake> newMistakes = performLiveAnalysis(stockfishClient, game, playerUsername, isWhite);
+          
+          // Save new mistakes to database
+          for (UserMistake mistake : newMistakes) {
+            try {
+              userMistakeService.saveMistakeFromDto(mistake);
+              mistakesFound++;
+              log.info("Saved new mistake from game {} at move {}", mistake.getGameId(), mistake.getMoveNumber());
+              if (mistakesFound >= targetCount) {
+                break;
+              }
+            } catch (Exception saveError) {
+              log.warn("Failed to save mistake from game {}: {}", mistake.getGameId(), saveError.getMessage());
+            }
+          }
+          
+          gamesProcessed++;
+          log.info("Background analysis: processed game {}, found {} mistakes so far", 
+                   game.getGameId(), mistakesFound);
+          
+        } catch (Exception e) {
+          log.warn("Error in background analysis for game {}: {}", game.getGameId(), e.getMessage());
+          // Continue processing other games even if one fails
+        }
+      }
+      
+      log.info("Background analysis completed: found {} additional mistakes for user {} after processing {} games", 
+               mistakesFound, playerUsername, gamesProcessed);
+      
+    } catch (Exception e) {
+      log.error("Error in background mistake analysis for user {}: {}", playerUsername, e.getMessage());
+    }
+    
+    return CompletableFuture.completedFuture(null);
+  }
+
+  /**
+   * Finds puzzles immediately and continues async for more.
+   * Returns first puzzle as soon as found, then continues background processing for 20 more.
+   */
+  public List<UserMistakeDocument> findPuzzlesImmediateWithAsyncContinuation(String playerUsername, int requestedLimit, int currentCount) {
+    log.info("Starting immediate puzzle search for user {} (requested: {}, current: {})", playerUsername, requestedLimit, currentCount);
+    
+    List<UserMistakeDocument> immediateResults = new ArrayList<>();
+    StockfishClient stockfishClient = null;
+    
+    try {
+      // Get games for this user
+      List<Game> games = gameDataAccess.getGames(playerUsername);
+      if ("stockfish".equalsIgnoreCase(appConfig.getEngineType())) {
+        stockfishClient = buildClient();
+      }
+      
+      int neededImmediate = Math.max(1, requestedLimit - currentCount);
+      int puzzlesFound = 0;
+      
+      // Process games one by one to find puzzles immediately
+      for (Game game : games) {
+        if (puzzlesFound >= neededImmediate) {
+          break;
+        }
+        
+        try {
+          String color = game.getWhitePlayer().getName().equalsIgnoreCase(playerUsername) ? "WHITE" : "BLACK";
+          boolean isWhite = color.equals("WHITE");
+          
+          List<UserMistake> newMistakes = performLiveAnalysis(stockfishClient, game, playerUsername, isWhite);
+          
+          // Save and return first puzzle immediately
+          for (UserMistake mistake : newMistakes) {
+            if (puzzlesFound >= neededImmediate) break;
+            
+            try {
+              UserMistakeDocument saved = userMistakeService.saveMistakeFromDto(mistake);
+              immediateResults.add(saved);
+              puzzlesFound++;
+              
+              log.info("Found immediate puzzle {} for user {}", puzzlesFound, playerUsername);
+              
+              // If we found at least one puzzle, start async background processing for 20 more
+              if (puzzlesFound == 1) {
+                log.info("Starting background processing for 20 additional puzzles");
+                analyzeAdditionalMistakesAsync(playerUsername, 20);
+              }
+              
+            } catch (Exception e) {
+              log.warn("Failed to save immediate puzzle for user {}: {}", playerUsername, e.getMessage());
+            }
+          }
+          
+        } catch (Exception e) {
+          log.warn("Error analyzing game {} for immediate puzzles: {}", game.getGameId(), e.getMessage());
+        }
+      }
+      
+      log.info("Immediate puzzle search completed: found {} puzzles for user {}", puzzlesFound, playerUsername);
+      
+    } catch (Exception e) {
+      log.error("Error in immediate puzzle search for user {}: {}", playerUsername, e.getMessage(), e);
+    }
+    
+    return immediateResults;
   }
   
   private String getGamePhase(int moveNumber) {
