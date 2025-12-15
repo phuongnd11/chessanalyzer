@@ -14,7 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/puzzles")
-@CrossOrigin(origins = {"http://chessstats.io", "http://localhost:3000"})
+@CrossOrigin(origins = {"http://localhost:3000", "https://funchess.io", "https://www.funchess.io"})
 public class PuzzleController {
 
     @Autowired

@@ -14,7 +14,7 @@ import com.inspireon.chessanalyzer.web.dtos.OpeningStat;
 import com.inspireon.chessanalyzer.web.dtos.UserMistake;
 
 
-@CrossOrigin(origins = { "http://localhost:3000"})
+@CrossOrigin(origins = { "http://localhost:3000", "https://funchess.io", "https://www.funchess.io" })
 @RestController
 public class OpeningController {
   

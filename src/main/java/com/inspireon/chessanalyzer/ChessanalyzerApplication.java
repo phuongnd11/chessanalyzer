@@ -29,10 +29,12 @@ public class ChessanalyzerApplication extends SpringBootServletInitializer {
           public void addCorsMappings(CorsRegistry registry) {
               registry.addMapping("/**")
                       .allowedOrigins(
-                          "http://chessstats.io",
+                          "http://funchess.io",
+                          "https://funchess.io",
+                          "http://www.funchess.io",
+                          "https://www.funchess.io",
                           "http://localhost:3000",
-                          "http://localhost:3001",
-                          "http://143.198.76.15")
+                          "http://localhost:3001")
                       .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                       .allowedHeaders("*")
                       .allowCredentials(true);
